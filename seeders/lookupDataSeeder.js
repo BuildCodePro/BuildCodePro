@@ -172,8 +172,25 @@ const lookupTables = [
 
 const seedLookups = async () => {
 	for (const { model, data } of lookupTables) {
-		await prisma[model].deleteMany();
-		await prisma[model].createMany({ data });
+		const modelClient = prisma[model];
+		if (!modelClient) {
+			throw new Error(`Prisma client does not contain model: ${model}`);
+		}
+
+		try {
+			// Use upsert per-record to avoid deleting rows that are referenced by FKs
+			for (const record of data) {
+				const { id, ...rest } = record;
+				await modelClient.upsert({
+					where: { code: record.code },
+					update: rest,
+					create: record,
+				});
+			}
+		} catch (err) {
+			console.error(`Error seeding model ${model}:`, err);
+			throw err;
+		}
 	}
 
 	console.log('Lookup tables seeded successfully');

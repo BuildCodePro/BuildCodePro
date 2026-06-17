@@ -17,6 +17,10 @@ import {
 	resetCheck,
 } from '../middlewares';
 import {
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+
 	loginSchema,
 	registerSchema,
 	verifySchema,

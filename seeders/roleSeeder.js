@@ -21,21 +21,23 @@ const roles = [
 ];
 
 const seedRoles = async () => {
-  try {
-    // Delete existing roles
-    await prisma.roles.deleteMany();
-    
-    // Insert new roles
-    const createdRoles = await prisma.roles.createMany({
-      data: roles
-    });
-    console.log('Roles seeded successfully:', createdRoles);
-    
-    return createdRoles;
-  } catch (error) {
-    console.error('Error seeding roles:', error);
-    throw error;
-  }
+	try {
+		// Upsert roles to avoid deleting rows referenced by foreign keys
+		for (const role of roles) {
+			const { id, ...rest } = role;
+			await prisma.roles.upsert({
+				where: { name: role.name },
+				update: rest,
+				create: role,
+			});
+		}
+
+		console.log('Roles seeded successfully');
+		return true;
+	} catch (error) {
+		console.error('Error seeding roles:', error);
+		throw error;
+	}
 };
 
 export default seedRoles; 
