@@ -1,0 +1,130 @@
+export const USER_STATUS_IDS = {
+	ACTIVE: 1,
+	INACTIVE: 2,
+	BLOCKED: 3,
+	PENDING: 4,
+	SHOULD_CHANGE_PASSWORD: 5,
+};
+
+export const AUTH_LOG_TYPE_IDS = {
+	LOGIN: 1,
+	LOGOUT: 2,
+};
+
+export const FILE_RESOURCE_TYPE_IDS = {
+	IMAGE: 1,
+	RAW: 2,
+	VIDEO: 3,
+	AUTO: 4,
+};
+
+export const PROJECT_STATUS_IDS = {
+	DRAFT: 1,
+	ACTIVE: 2,
+	PROCESSING: 3,
+	COMPLETED: 4,
+	ARCHIVED: 5,
+	DELETED: 6,
+};
+
+export const DESIGN_JOB_STATUS_IDS = {
+	QUEUED: 1,
+	PROCESSING: 2,
+	COMPLETED: 3,
+	FAILED: 4,
+	CANCELLED: 5,
+};
+
+export const COMPLIANCE_STATUS_IDS = {
+	PASS: 1,
+	REVIEW: 2,
+	FAIL: 3,
+};
+
+export const EXPORT_FORMAT_IDS = {
+	PDF: 1,
+	CSV: 2,
+};
+
+export const EXPORT_STATUS_IDS = {
+	PENDING: 1,
+	PROCESSING: 2,
+	COMPLETED: 3,
+	FAILED: 4,
+};
+
+export const BILLING_CYCLE_IDS = {
+	MONTHLY: 1,
+	QUARTERLY: 2,
+	SEMI_ANNUAL: 3,
+	ANNUAL: 4,
+};
+
+export const SUBSCRIPTION_STATUS_IDS = {
+	ACTIVE: 1,
+	TRIALING: 2,
+	PAST_DUE: 3,
+	CANCELLED: 4,
+	EXPIRED: 5,
+	PAUSED: 6,
+};
+
+export const INVOICE_STATUS_IDS = {
+	DRAFT: 1,
+	OPEN: 2,
+	PAID: 3,
+	VOID: 4,
+	UNCOLLECTIBLE: 5,
+};
+
+export const TICKET_STATUS_IDS = {
+	OPEN: 1,
+	IN_PROGRESS: 2,
+	WAITING_ON_CUSTOMER: 3,
+	RESOLVED: 4,
+	CLOSED: 5,
+};
+
+export const TICKET_PRIORITY_IDS = {
+	LOW: 1,
+	MEDIUM: 2,
+	HIGH: 3,
+	URGENT: 4,
+};
+
+export const ACTIVITY_ENTITY_TYPE_IDS = {
+	PROJECT: 1,
+	DESIGN_JOB: 2,
+	EXPORT: 3,
+	SUBSCRIPTION: 4,
+	USER: 5,
+	TICKET: 6,
+};
+
+export const ACTIVITY_ACTION_IDS = {
+	CREATED: 1,
+	UPDATED: 2,
+	DELETED: 3,
+	UPLOADED: 4,
+	GENERATED: 5,
+	EXPORTED: 6,
+	ARCHIVED: 7,
+	RESTORED: 8,
+	SUBSCRIBED: 9,
+	CANCELLED: 10,
+	LOGIN: 11,
+	LOGOUT: 12,
+};
+
+export const USAGE_EVENT_TYPE_IDS = {
+	DESIGN_GENERATED: 1,
+	EXPORT_PDF: 2,
+	EXPORT_CSV: 3,
+	DRAWING_UPLOADED: 4,
+	PROJECT_CREATED: 5,
+};
+
+export const AI_PROVIDER_IDS = {
+	OPENAI: 1,
+	ANTHROPIC: 2,
+};

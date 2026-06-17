@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Build
+.next/
+out/
+dist/
+
+# Uploads
+temp_uploads/
+uploads/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Prisma
+node/prisma/migrations/**/migration.sql.bak
+
+.github
+package-lock.json
+
+MILESTONE_1_TODO.md
+AI Powered Fire Alarm Design & Estimation Platform.md
+
