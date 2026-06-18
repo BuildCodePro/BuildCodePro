@@ -12,6 +12,7 @@ export { DesignRecommendationsPanel } from "./design-recommendations-panel";
 export { NarrativeExportToggle } from "./narrative-export-toggle";
 export { NarrativeSection } from "./narrative-section";
 export { FloorPlanPreview } from "./floor-plan-preview";
+export { FloorPlanViewer } from "./floor-plan-viewer";
 export { RecommendationCard, RecommendationCardList } from "./recommendation-card";
 export { ResultsProjectHeader } from "./results-project-header";
 export { ResultsStep } from "./results-step";
