@@ -19,15 +19,11 @@ export function HeroBanner({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-[16px] bg-ai-mesh px-6 py-6 sm:px-8 sm:py-8",
+        "rounded-[16px] bg-sidebar px-6 py-6 sm:px-8 sm:py-8",
         className,
       )}
     >
-      <div
-        className="landing-hero-grid pointer-events-none absolute inset-0 opacity-30"
-        aria-hidden="true"
-      />
-      <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl space-y-3">
           <h2 className="text-hero-title text-white">
             Generate fire alarm estimates in minutes

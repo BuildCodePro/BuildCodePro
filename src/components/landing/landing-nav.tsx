@@ -33,7 +33,7 @@ export function LandingNav() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
         isScrolled
-          ? "border-b border-ai-indigo/20 bg-sidebar/90 shadow-lg shadow-ai-indigo/10 backdrop-blur-xl"
+          ? "border-b border-ai-indigo/20 bg-[#060912]/90 shadow-lg shadow-ai-indigo/10 backdrop-blur-xl"
           : "bg-transparent",
       )}
     >
@@ -97,7 +97,7 @@ export function LandingNav() {
       <div
         id="landing-mobile-menu"
         className={cn(
-          "border-t border-white/10 bg-sidebar md:hidden",
+          "border-t border-white/10 bg-[#060912] md:hidden",
           isMobileOpen ? "block" : "hidden",
         )}
       >

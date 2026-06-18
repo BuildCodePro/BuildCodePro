@@ -97,7 +97,7 @@ export function HeroProductPreview() {
 
       <div
         className={cn(
-          "absolute -left-2 top-8 flex items-center gap-2 rounded-full border border-white/15 bg-sidebar/90 px-3 py-2 shadow-lg backdrop-blur-md sm:-left-6",
+          "absolute -left-2 top-8 flex items-center gap-2 rounded-full border border-white/15 bg-[#060912]/90 px-3 py-2 shadow-lg backdrop-blur-md sm:-left-6",
           "animate-landing-float motion-reduce:animate-none",
         )}
         style={{ animationDelay: "0ms" }}

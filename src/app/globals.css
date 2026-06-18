@@ -3,22 +3,21 @@
 @theme inline {
   --color-primary: #e53935;
   --color-primary-hover: #d32f2f;
-  --color-sidebar: #060912;
+  --color-sidebar: #0b1220;
   --color-sidebar-foreground: #94a3b8;
-  --color-sidebar-active: #6366f1;
+  --color-sidebar-active: #e53935;
   --color-muted: #94a3b8;
   --color-muted-foreground: #64748b;
-  --color-border: #e2e8f4;
+  --color-border: #e5e7eb;
   --color-input-border: #cbd5e1;
-  --color-foreground: #0f172a;
+  --color-foreground: #111827;
   --color-background: #ffffff;
-  --color-surface: #f4f7fc;
-  --color-surface-ai: #eef2ff;
-  --color-stat-label: #64748b;
-  --color-stat-value: #0f172a;
+  --color-surface: #f8fafc;
+  --color-stat-label: #6b7280;
+  --color-stat-value: #111827;
   --color-success: #16a34a;
   --color-warning: #ea580c;
-  --color-accent-cyan: #06b6d4;
+  --color-accent-cyan: #0891b2;
   --color-ai-cyan: #22d3ee;
   --color-ai-blue: #3b82f6;
   --color-ai-indigo: #6366f1;
@@ -202,11 +201,15 @@
   }
 
   .bg-ai-mesh {
-    background-color: var(--color-sidebar);
+    background-color: #060912;
     background-image:
       radial-gradient(ellipse 80% 60% at 10% 20%, rgba(99, 102, 241, 0.22), transparent 55%),
       radial-gradient(ellipse 70% 50% at 90% 80%, rgba(34, 211, 238, 0.16), transparent 50%),
       radial-gradient(ellipse 50% 40% at 50% 50%, rgba(139, 92, 246, 0.1), transparent 60%);
+  }
+
+  .bg-surface-ai {
+    background-color: #eef2ff;
   }
 
   .text-ai-gradient {

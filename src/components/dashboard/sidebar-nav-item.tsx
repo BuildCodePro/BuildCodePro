@@ -23,7 +23,7 @@ export function SidebarNavItem({ item, isActive, onClick }: SidebarNavItemProps)
       className={cn(
         "flex h-[41px] w-full items-center gap-[14px] rounded-[10px] px-[14px] py-3 font-body text-sm font-medium transition-colors",
         isActive
-          ? "bg-ai-gradient text-white shadow-md shadow-ai-indigo/20"
+          ? "bg-primary text-white"
           : "text-sidebar-foreground hover:bg-white/5 hover:text-white",
       )}
     >

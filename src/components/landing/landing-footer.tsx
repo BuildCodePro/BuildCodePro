@@ -71,7 +71,7 @@ export function LandingFooter() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative overflow-hidden bg-sidebar">
+    <footer className="relative overflow-hidden bg-ai-mesh">
       <div className="footer-top-shine motion-reduce:opacity-60" aria-hidden="true" />
       <div
         className="landing-hero-grid absolute inset-0 opacity-[0.1]"
