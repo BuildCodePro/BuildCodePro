@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { getEngineerPageTitle } from "@/lib/utils/get-engineer-page-title";
-import { getSession } from "@/lib/auth/session";
 import { cn } from "@/lib/utils/cn";
 
 import { EngineerHeader } from "./engineer-header";
@@ -20,12 +19,7 @@ export function EngineerShell({ children }: EngineerShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [userName, setUserName] = useState("Engineer");
 
-  useEffect(() => {
-    const session = getSession();
-    if (session?.user.name) {
-      setUserName(session.user.name);
-    }
-  }, []);
+
 
   return (
     <div className="flex min-h-screen bg-surface">

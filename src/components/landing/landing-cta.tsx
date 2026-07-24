@@ -32,7 +32,7 @@ export function LandingCta() {
                 <span className="text-ai-gradient">minutes</span>.
               </h2>
               <p className="font-body text-base leading-relaxed text-slate-400">
-                Join fire alarm contractors using AI to accelerate NFPA 72
+                Join fire alarm company_owners using AI to accelerate NFPA 72
                 design, BOM generation, and compliance review — without
                 replacing licensed engineering oversight.
               </p>

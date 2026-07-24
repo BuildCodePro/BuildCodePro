@@ -3,20 +3,20 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import {
-  getDashboardPathForRole,
-  getSession,
-} from "@/lib/auth/session";
+import { getDashboardPathForRole } from "@/lib/auth/session";
+import { useAuthStore } from "@/store/auth-store";
 
 export function LandingAuthRedirect() {
   const router = useRouter();
+  const { user, accessToken, role, _hasHydrated } = useAuthStore();
 
   useEffect(() => {
-    const session = getSession();
-    if (session) {
-      router.replace(getDashboardPathForRole(session.user.role));
+    if (!_hasHydrated) return;
+
+    if (user && accessToken && role) {
+      router.replace(getDashboardPathForRole(role));
     }
-  }, [router]);
+  }, [router, user, accessToken, role, _hasHydrated]);
 
   return null;
 }

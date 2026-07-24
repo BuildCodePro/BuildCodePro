@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthSplitLayout } from "@/components/auth/auth-split-layout";
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function ResetPasswordPage() {
   return (
     <AuthSplitLayout>
-      <ResetPasswordForm />
+      <Suspense fallback={null}>
+        <ResetPasswordForm />
+      </Suspense>
     </AuthSplitLayout>
   );
 }

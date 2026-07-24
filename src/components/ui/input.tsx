@@ -9,7 +9,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, leftIcon, rightSlot, ...props }, ref) => (
+  ({ className, type, error, leftIcon, rightSlot, children, dangerouslySetInnerHTML, ...props }, ref) => (
     <div className="w-full">
       <div className="relative">
         {leftIcon ? (

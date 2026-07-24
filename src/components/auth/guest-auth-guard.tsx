@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import {
-  getDashboardPathForRole,
-  getSession,
-} from "@/lib/auth/session";
+import { getDashboardPathForRole } from "@/lib/auth/session";
+import { useAuthStore } from "@/store/auth-store";
 
 interface GuestAuthGuardProps {
   children: React.ReactNode;
@@ -19,17 +17,19 @@ interface GuestAuthGuardProps {
 export function GuestAuthGuard({ children }: GuestAuthGuardProps) {
   const router = useRouter();
   const [isGuest, setIsGuest] = useState(false);
+  const { user, accessToken, role, _hasHydrated } = useAuthStore();
 
   useEffect(() => {
-    const session = getSession();
+    // Wait for the auth store to hydrate from local storage
+    if (!_hasHydrated) return;
 
-    if (session) {
-      router.replace(getDashboardPathForRole(session.user.role));
+    if (user && accessToken && role) {
+      router.replace(getDashboardPathForRole(role));
       return;
     }
 
     setIsGuest(true);
-  }, [router]);
+  }, [router, user, accessToken, role, _hasHydrated]);
 
   if (!isGuest) {
     return null;

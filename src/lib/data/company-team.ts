@@ -35,7 +35,7 @@ export const companyTeamMembers: CompanyTeamMember[] = [
     id: "team-1",
     name: "John Doe",
     email: "john@acmefire.com",
-    role: "company_admin",
+    role: "company_owner",
     status: "active",
     twoFactorEnabled: true,
     lastLogin: "Jun 9, 2025",

@@ -52,8 +52,8 @@ export function StatsGrid({ stats, className }: StatsGridProps) {
         className,
       )}
     >
-      {stats.map((stat) => (
-        <StatCard key={stat.id} stat={stat} />
+      {stats.map((stat, idx) => (
+        <StatCard key={idx} stat={stat} />
       ))}
     </div>
   );

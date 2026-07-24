@@ -2,13 +2,13 @@ import { cn } from "@/lib/utils/cn";
 import type { PlatformUserRole } from "@/types/super-admin";
 
 const roleStyles: Record<PlatformUserRole, string> = {
-  company_admin: "bg-primary/10 text-primary",
+  company_owner: "bg-primary/10 text-primary",
   estimator: "bg-sky-50 text-sky-700",
   engineer: "bg-violet-50 text-violet-700",
 };
 
 const roleLabels: Record<PlatformUserRole, string> = {
-  company_admin: "Company Admin",
+  company_owner: "Company Admin",
   estimator: "Estimator",
   engineer: "Engineer",
 };

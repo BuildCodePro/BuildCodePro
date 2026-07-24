@@ -34,7 +34,7 @@ export function LandingHero() {
           >
             <span className="size-2 animate-pulse rounded-full bg-ai-cyan motion-reduce:animate-none" />
             <span className="font-body text-xs font-medium text-slate-300 sm:text-sm">
-              AI-powered fire alarm estimation for contractors
+              AI-powered fire alarm estimation for company owners
             </span>
           </div>
 

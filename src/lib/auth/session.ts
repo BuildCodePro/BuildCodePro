@@ -1,45 +1,15 @@
-import type { AuthSession, UserRole } from "@/types/auth";
-
-const SESSION_STORAGE_KEY = "buildcodepro-auth-session";
-
-export function getSession(): AuthSession | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    return null;
-  }
-}
-
-export function setSession(user: AuthSession["user"]): AuthSession {
-  const session: AuthSession = {
-    user,
-    createdAt: new Date().toISOString(),
-  };
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
-  }
-
-  return session;
-}
+import type { UserRole } from "@/types/auth";
+import { useAuthStore } from "@/store/auth-store";
 
 export function clearSession(): void {
-  if (typeof window !== "undefined") {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY);
-  }
+  useAuthStore.getState().clearSession();
 }
 
 export function logout(): void {
   clearSession();
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("build-auth");
+  }
 }
 
 export function getDashboardPathForRole(role: UserRole): string {
@@ -52,5 +22,6 @@ export function getDashboardPathForRole(role: UserRole): string {
   if (role === "engineer") {
     return "/engineer";
   }
-  return "/dashboard";
+  // Company owner defaults to /company/dashboard
+  return "/company/dashboard";
 }

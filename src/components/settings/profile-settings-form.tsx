@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import { useState } from "react";
@@ -14,6 +16,7 @@ import {
 import { FormField } from "@/components/ui/form-field";
 import { DEFAULT_PROFILE_SETTINGS } from "@/lib/constants/settings";
 import type { ProfileSettings } from "@/lib/constants/settings";
+import { useUpdateProfileMutation } from "@/services/useProfileService";
 
 import { LogoUploadField } from "./logo-upload-field";
 
@@ -21,7 +24,8 @@ export function ProfileSettingsForm() {
   const [formData, setFormData] = useState<ProfileSettings>(
     DEFAULT_PROFILE_SETTINGS,
   );
-  const [isSaving, setIsSaving] = useState(false);
+
+  const updateProfileMutation = useUpdateProfileMutation();
 
   const handleChange = (field: keyof ProfileSettings, value: string) => {
     setFormData((current) => ({ ...current, [field]: value }));
@@ -29,13 +33,10 @@ export function ProfileSettingsForm() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsSaving(true);
-
-    // API integration will be wired later
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    setIsSaving(false);
+    updateProfileMutation.mutate({ full_name: formData.fullName });
   };
+
+  const isSaving = updateProfileMutation.isPending;
 
   return (
     <Card>
@@ -51,6 +52,7 @@ export function ProfileSettingsForm() {
           <div className="flex flex-wrap items-center gap-4">
             <Avatar
               name={formData.fullName}
+              src={updateProfileMutation.data?.avatar_url}
               className="size-16 text-lg"
             />
             <Button
@@ -94,7 +96,13 @@ export function ProfileSettingsForm() {
             />
           </div>
 
-          <LogoUploadField className="max-w-md" />
+          <LogoUploadField className="" />
+
+          {updateProfileMutation.isError && (
+            <p className="text-sm text-red-500">
+              Couldn&apos;t save changes. Please try again.
+            </p>
+          )}
 
           <div className="flex justify-end">
             <Button

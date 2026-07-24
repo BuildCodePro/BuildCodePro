@@ -38,14 +38,14 @@ export function ComplianceScoreHeader({
           strokeWidth={8}
           trackClassName="text-slate-700"
           valueClassName="!text-2xl text-white"
-          aria-label="NFPA 72 compliance score"
+          aria-label={`NFPA ${Math.round(score)}% compliance score`}
           className="shrink-0"
         />
 
         <div className="min-w-0 space-y-3">
           <div className="space-y-2">
             <h2 className="font-heading text-xl font-bold tracking-tight sm:text-2xl">
-              NFPA 72 Compliance Score
+              {`NFPA ${Math.round(score)}% Compliance Score`}
             </h2>
             <p className="font-body text-sm text-slate-400">{subtitle}</p>
           </div>

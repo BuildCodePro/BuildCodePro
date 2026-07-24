@@ -28,7 +28,7 @@ export const MOCK_COMPLIANCE_RESULTS: ComplianceResults = {
         {
           id: "mechanical-rooms",
           label: "Detector placement in mechanical rooms reviewed",
-          status: "review-needed",
+          status: "review_needed",
         },
       ],
     },

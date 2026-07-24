@@ -3,7 +3,6 @@ import type {
   ProjectInfoFormData,
 } from "@/types/new-design";
 
-import { BOM_TOTAL_ITEMS } from "./bom";
 import { MOCK_COMPLIANCE_RESULTS } from "./compliance";
 
 export const RESULTS_TABS = [
@@ -16,7 +15,6 @@ export const RESULTS_TABS = [
 
 export const MOCK_DESIGN_RESULTS: DesignResults = {
   generatedAt: "2025-06-09",
-  bomTotalItems: BOM_TOTAL_ITEMS,
   compliance: MOCK_COMPLIANCE_RESULTS,
   metrics: [
     {
@@ -35,7 +33,7 @@ export const MOCK_DESIGN_RESULTS: DesignResults = {
       id: "compliance",
       label: "Compliance Status",
       value: "91%",
-      description: "NFPA 72 Pass Rate",
+      description: "NFPA 8 Pass Rate",
     },
     {
       id: "review-flags",

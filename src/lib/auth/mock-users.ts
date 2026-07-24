@@ -7,7 +7,7 @@ interface MockUserRecord extends AuthUser {
 /**
  * Mock credentials for local development until Supabase auth (Milestone 1).
  *
- * Company user  → contractor dashboard
+ * Company user  → company_owner dashboard
  * Estimator     → estimation-focused dashboard
  * Engineer      → PE review & approval dashboard
  * Super admin   → platform administration dashboard
@@ -18,7 +18,7 @@ export const MOCK_USERS: MockUserRecord[] = [
     email: "john@acmefire.com",
     password: "Company@123",
     name: "John Doe",
-    role: "company",
+    role: "company_owner",
     companyName: "Acme Fire Protection",
   },
   {
@@ -50,7 +50,7 @@ export const MOCK_LOGIN_CREDENTIALS = {
   company: {
     email: "john@acmefire.com",
     password: "Company@123",
-    label: "Company (Contractor)",
+    label: "Company (company_owner)",
   },
   estimator: {
     email: "sarah@acmefire.com",

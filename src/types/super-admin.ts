@@ -1,8 +1,8 @@
 export type CompanyPlan = "starter" | "professional" | "enterprise";
 export type CompanyStatus = "active" | "trial" | "suspended";
 
-export type PlatformUserRole = "company_admin" | "estimator" | "engineer";
-export type PlatformUserStatus = "active" | "pending" | "suspended";
+export type PlatformUserRole = "company_owner" | "estimator" | "engineer";
+export type PlatformUserStatus = "active" | "pending" | "suspended" | "inactive";
 
 export type BillingCycle = "monthly" | "quarterly" | "semi-annual" | "annual";
 
@@ -47,8 +47,10 @@ export interface SubscriptionUsage {
   atLimit: boolean;
 }
 
+
 export interface PlatformInvoice {
-  id: string;
+  id: string; // display: invoice_number
+  invoiceId?: string; // actual invoice_id used for PDF/API calls
   company: string;
   date: string;
   plan: string;

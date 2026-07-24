@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-
+import { Suspense } from "react";
 import { DesignWizard } from "@/components/new-design";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
 
 export const metadata: Metadata = {
   title: "New Design",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function NewDesignPage() {
-  return <DesignWizard />;
+  return (
+    <Suspense fallback={<TableSkeleton rows={10} columns={2} />}>
+      <DesignWizard />
+    </Suspense>
+  );
 }

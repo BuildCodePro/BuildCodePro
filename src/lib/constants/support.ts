@@ -31,7 +31,7 @@ export const SUPPORT_HELP_ARTICLES: HelpArticle[] = [
     excerpt:
       "Learn how to create your first project, invite your team, and run an AI design from upload to export.",
     body: [
-      "BuildCode Pro helps fire alarm contractors move from drawings to bid-ready estimates in minutes. After signing up, company owners can invite estimators and licensed engineers from the Team page.",
+      "BuildCode Pro helps fire alarm company_owners move from drawings to bid-ready estimates in minutes. After signing up, company owners can invite estimators and licensed engineers from the Team page.",
       "Start a new design from the sidebar: upload construction drawings, enter project metadata (address, jurisdiction, occupancy, square footage), then run AI analysis. Results include device recommendations, a material takeoff, compliance checklist, design narrative, and export options.",
       "Saved projects appear under Projects in grid or list view. Open any project to review results, version history, and activity logs.",
     ],
@@ -57,7 +57,7 @@ export const SUPPORT_HELP_ARTICLES: HelpArticle[] = [
     categoryLabel: "Compliance",
     readTime: "5 min read",
     excerpt:
-      "How compliance checks work, what pass and review-needed mean, and when to involve a licensed PE.",
+      "How compliance checks work, what pass and review_needed mean, and when to involve a licensed PE.",
     body: [
       "The compliance engine evaluates your project against NFPA 72 requirements based on occupancy type, building size, and jurisdiction notes. Each rule is marked pass, review needed, or flagged for attention.",
       "A high compliance score does not replace licensed engineering review. AI output is intended for the estimation and bidding stage. Professional engineers should review results before permit submission.",

@@ -4,7 +4,7 @@ import { CompaniesContent } from "@/components/super-admin/companies-content";
 
 export const metadata: Metadata = {
   title: "Companies",
-  description: "Manage contractor companies on the BuildCode Pro platform",
+  description: "Manage company_owner companies on the BuildCode Pro platform",
 };
 
 export default function SuperAdminCompaniesPage() {

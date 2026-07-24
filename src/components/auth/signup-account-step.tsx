@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
@@ -9,33 +10,65 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { routes } from "@/config/routes";
 import { validateSignupForm } from "@/lib/validations/auth";
 import type { SignupFormData } from "@/types/auth";
+import { PasswordField } from "../ui";
 
-interface SignupAccountStepProps {
-  formData: SignupFormData;
-  onChange: (data: SignupFormData) => void;
-  onContinue: () => void;
-}
+export function SignupForm() {
+  const router = useRouter();
 
-export function SignupAccountStep({
-  formData,
-  onChange,
-  onContinue,
-}: SignupAccountStepProps) {
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof SignupFormData, string>>
-  >({});
+  const [formData, setFormData] = useState<SignupFormData>({
+    fullName: "",
+    companyName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    acceptTerms: false,
+  });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const handleChange = (data: SignupFormData) => setFormData(data);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setApiError(null);
 
     const validation = validateSignupForm(formData);
     setErrors(validation.errors);
+    if (!validation.success) return;
 
-    if (!validation.success) {
-      return;
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        email: formData.email,
+        name: formData.fullName,
+        role: "company_owner",
+        is_verified: true,
+        password: formData.password,
+      };
+
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.message ?? "Signup failed. Please try again.");
+      }
+
+      const params = new URLSearchParams({ email: formData.email });
+      router.push(`${routes.verifyEmail}?${params.toString()}`);
+    } catch (err) {
+      setApiError(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onContinue();
   };
 
   return (
@@ -44,20 +77,8 @@ export function SignupAccountStep({
       className="flex w-full flex-col gap-4"
       noValidate
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <FormField
-          label="Full Name"
-          name="fullName"
-          type="text"
-          autoComplete="name"
-          placeholder="John Doe"
-          value={formData.fullName}
-          onChange={(event) =>
-            onChange({ ...formData, fullName: event.target.value })
-          }
-          error={errors.fullName}
-          required
-        />
+      <div className="grid grid-cols-1">
+
 
         <FormField
           label="Company Name"
@@ -67,9 +88,9 @@ export function SignupAccountStep({
           placeholder="Acme Fire Protection"
           value={formData.companyName}
           onChange={(event) =>
-            onChange({ ...formData, companyName: event.target.value })
+            handleChange({ ...formData, companyName: event.target.value })
           }
-          error={errors.companyName}
+
           required
         />
       </div>
@@ -82,37 +103,35 @@ export function SignupAccountStep({
         placeholder="you@company.com"
         value={formData.email}
         onChange={(event) =>
-          onChange({ ...formData, email: event.target.value })
+          handleChange({ ...formData, email: event.target.value })
         }
-        error={errors.email}
+
         required
       />
 
-      <FormField
+      <PasswordField
         label="Password"
         name="password"
-        type="password"
         autoComplete="new-password"
         placeholder="Create a password"
         value={formData.password}
         onChange={(event) =>
-          onChange({ ...formData, password: event.target.value })
+          handleChange({ ...formData, password: event.target.value })
         }
-        error={errors.password}
+
         required
       />
 
-      <FormField
+      <PasswordField
         label="Confirm Password"
         name="confirmPassword"
-        type="password"
         autoComplete="new-password"
         placeholder="Re-enter password"
         value={formData.confirmPassword}
         onChange={(event) =>
-          onChange({ ...formData, confirmPassword: event.target.value })
+          handleChange({ ...formData, confirmPassword: event.target.value })
         }
-        error={errors.confirmPassword}
+
         required
       />
 
@@ -123,7 +142,7 @@ export function SignupAccountStep({
             className="mt-0.5"
             checked={formData.acceptTerms}
             onChange={(event) =>
-              onChange({ ...formData, acceptTerms: event.target.checked })
+              handleChange({ ...formData, acceptTerms: event.target.checked })
             }
           />
           <span className="font-body text-sm leading-snug text-muted-foreground">
@@ -143,15 +162,15 @@ export function SignupAccountStep({
             </Link>
           </span>
         </label>
-        {errors.acceptTerms ? (
-          <p className="mt-1.5 font-body text-xs text-primary">
-            {errors.acceptTerms}
-          </p>
-        ) : null}
+
       </div>
 
-      <Button type="submit" className="mt-2 max-w-none">
-        Continue to Team Setup
+      {apiError ? (
+        <p className="font-body text-sm text-primary">{apiError}</p>
+      ) : null}
+
+      <Button type="submit" className="mt-2 max-w-none" disabled={isSubmitting}>
+        {isSubmitting ? "Creating account..." : "Create Account"}
       </Button>
     </form>
   );

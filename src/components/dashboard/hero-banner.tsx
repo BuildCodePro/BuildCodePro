@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { routes } from "@/config/routes";
@@ -23,13 +23,13 @@ export function HeroBanner({
         className,
       )}
     >
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className=" flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl space-y-3">
           <h2 className="text-hero-title text-white">
-            Generate fire alarm estimates in minutes
+            Generate fire alarm estimates in minutes.
           </h2>
           <p className="text-hero-subtitle max-w-xl">
-            Upload construction drawings and get AI-assisted BOM, compliance
+            Upload construction drawings and get an AI-assisted BOM, compliance.
             report and design narrative.
           </p>
         </div>
@@ -45,16 +45,7 @@ export function HeroBanner({
             <Plus className="size-4" />
             Create New Design
           </Link>
-          <Link
-            href={projectsHref}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "h-[43px] w-full max-w-none gap-2 rounded-[10px] border-white/20 bg-transparent px-7 py-[13px] text-white hover:bg-white/10 sm:w-auto",
-            )}
-          >
-            View Projects
-            <ArrowRight className="size-4" />
-          </Link>
+
         </div>
       </div>
     </section>

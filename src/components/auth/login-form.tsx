@@ -14,13 +14,18 @@ import { PasswordField } from "@/components/ui/password-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { routes } from "@/config/routes";
-import { authenticateMockUser } from "@/lib/auth/mock-users";
-import {
-  getDashboardPathForRole,
-  setSession,
-} from "@/lib/auth/session";
+import { useLoginMutation } from "@/services/authService";
+import { useAuthStore } from "@/store/auth-store";
 import { validateLoginForm } from "@/lib/validations/auth";
 import type { LoginFormData } from "@/types/auth";
+import { toast } from "sonner";
+
+const ROLE_REDIRECT_MAP: Record<string, string> = {
+  company_owner: "/company/dashboard",
+  engineer: "/engineer",
+  estimator: "/estimator",
+  super_admin: "/super-admin",
+};
 
 export function LoginForm() {
   const router = useRouter();
@@ -29,13 +34,13 @@ export function LoginForm() {
     password: "",
     rememberMe: false,
   });
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof LoginFormData, string>>
-  >({});
+  const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const { mutate: loginUser, isPending: isSubmitting } = useLoginMutation();
+  const role = useAuthStore((s) => s.role);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAuthError(null);
 
@@ -46,21 +51,29 @@ export function LoginForm() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    await new Promise((resolve) => setTimeout(resolve, 400));
-
-    const user = authenticateMockUser(formData.email, formData.password);
-
-    if (!user) {
-      setAuthError("Invalid email or password. Please try again.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    setSession(user);
-    setIsSubmitting(false);
-    router.replace(getDashboardPathForRole(user.role));
+    loginUser(
+      {
+        email: formData.email,
+        password: formData.password,
+        remember_me: formData.rememberMe,
+      },
+      {
+        onSuccess: (data) => {
+          router.push(`${routes.verifyOtp}?email=${encodeURIComponent(formData.email)}&flow=login`);
+          toast.success("OTP sent on your email successfully")
+          return;
+        },
+        onError: (error: any) => {
+          const message =
+            error instanceof Error
+              ? error.message : error?.data?.message;
+          toast.error(message)
+          console.log("error",error);
+          
+          setAuthError(message);
+        },
+      },
+    );
   };
 
   return (
@@ -88,6 +101,7 @@ export function LoginForm() {
           }
           error={errors.email}
         />
+        
 
         <PasswordField
           label="Password"

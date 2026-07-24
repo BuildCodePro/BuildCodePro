@@ -20,25 +20,22 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
   return (
     <div className="flex min-h-screen bg-surface">
-      {/* Persistent sidebar — visible on md and above */}
-      <div className="hidden md:flex">
+      <div className="hidden lg:flex">
         <Sidebar className="sticky top-0 h-screen" />
       </div>
 
-      {/* Mobile overlay backdrop */}
       {isMobileNavOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           aria-label="Close navigation menu"
           onClick={() => setIsMobileNavOpen(false)}
         />
       ) : null}
 
-      {/* Mobile slide-in drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:hidden",
+          "fixed inset-y-0 left-0 z-50 transition-transform duration-200 lg:hidden",
           isMobileNavOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >

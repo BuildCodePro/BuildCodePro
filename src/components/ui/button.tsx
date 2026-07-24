@@ -17,9 +17,9 @@ const buttonVariants = cva(
         link: "text-primary hover:underline font-body font-normal",
       },
       size: {
-        default: "h-[49px] w-full max-w-[380px] px-[84px] py-[15px] text-[15px]",
+        default: "h-[49px] w-full px-[84px] py-[15px] text-[15px]",
         sm: "h-9 px-4 text-sm rounded-lg",
-        social: "h-[49px] w-full max-w-[380px] px-4 py-[15px] text-[15px] font-body font-medium",
+        social: "h-[49px] w-full px-4 py-[15px] text-[15px] font-body font-medium",
       },
     },
     defaultVariants: {
@@ -31,7 +31,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {}
+  VariantProps<typeof buttonVariants> { }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, ...props }, ref) => (

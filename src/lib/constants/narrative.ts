@@ -71,13 +71,13 @@ export function buildDesignNarrative(
         id: "design-assumptions",
         title: "Design Assumptions",
         content:
-          "Design assumptions are based on uploaded floor plans, NFPA 72 (2022 Edition) spacing requirements, and standard Assembly occupancy notification criteria. Ceiling heights assumed at 10 ft unless otherwise indicated on drawings.",
+          "Design assumptions are based on uploaded floor plans, NFPA 72 (2022 Edition) spacing requirements, and standard assembly occupancy notification criteria. Ceiling heights assumed at 10 ft unless otherwise indicated on drawings.",
       },
       {
         id: "device-placement",
         title: "Device Placement Logic",
         content:
-          "Smoke detectors are placed per NFPA 72 spacing tables with additional coverage at corridor intersections and large open areas. Manual pull stations are located within 5 ft of exit doors on each floor. Horn/strobe units are distributed to meet 15 dB above ambient and candela requirements for Assembly occupancies.",
+          "Smoke detectors are placed per NFPA 72 spacing tables with additional coverage at corridor intersections and large open areas. Manual pull stations are located within 5 ft of exit doors on each floor. Horn/strobe units are distributed to meet 15 dB above ambient and candela requirements for assembly occupancies.",
       },
       {
         id: "material-estimate",

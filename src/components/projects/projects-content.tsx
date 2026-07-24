@@ -1,25 +1,30 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { Loader2, Rocket } from "lucide-react";
 
 import { FilterSelect } from "@/components/ui/filter-select";
 import { SearchInput } from "@/components/ui/search-input";
+import { Pagination } from "@/components/ui/pagination";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useGetProjectsQuery } from "@/services/projectService";
 import {
   PROJECT_DATE_FILTER_OPTIONS,
   PROJECT_JURISDICTION_FILTER_OPTIONS,
   PROJECT_OCCUPANCY_FILTER_OPTIONS,
   PROJECT_STATUS_FILTER_OPTIONS,
-  projectsList,
 } from "@/lib/data/projects";
 import type { DashboardProject } from "@/types/dashboard";
 
 import { ProjectCardGrid } from "./project-card";
 import { ProjectsListView } from "./projects-list-view";
 import { ViewModeToggle, type ProjectsViewMode } from "./view-mode-toggle";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface ProjectsContentProps {
-  projects?: DashboardProject[];
   projectsBasePath?: string;
+  // Fallback prop in case it's used elsewhere with static data
+  projects?: any[];
 }
 
 function toSelectOptions<T extends { value: string; label: string }>(
@@ -31,41 +36,51 @@ function toSelectOptions<T extends { value: string; label: string }>(
   }));
 }
 
-export function ProjectsContent({
-  projects = projectsList,
-  projectsBasePath,
-}: ProjectsContentProps) {
+export function ProjectsContent({ projectsBasePath }: ProjectsContentProps) {
   const [viewMode, setViewMode] = useState<ProjectsViewMode>("grid");
   const [statusFilter, setStatusFilter] = useState("all");
   const [occupancyFilter, setOccupancyFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("created");
   const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
+
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  const filteredProjects = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-    return projects.filter((project) => {
-      const matchesStatus =
-        statusFilter === "all" || project.status === statusFilter;
-      const matchesOccupancy =
-        occupancyFilter === "all" ||
-        project.occupancyType === occupancyFilter;
-      const matchesSearch =
-        !query ||
-        project.name.toLowerCase().includes(query) ||
-        project.address.toLowerCase().includes(query) ||
-        project.occupancyType.toLowerCase().includes(query);
+  const { data, isLoading, isError } = useGetProjectsQuery({
+    page,
+    page_size: pageSize,
+    search: debouncedSearchQuery,
+    status: statusFilter,
+    occupancy_type: occupancyFilter,
+    jurisdiction_state: jurisdictionFilter,
+  });
 
-      return matchesStatus && matchesOccupancy && matchesSearch;
-    });
-  }, [occupancyFilter, projects, searchQuery, statusFilter]);
+  // Map API response to UI expected format (DashboardProject)
+  const displayProjects: DashboardProject[] = (data?.items || []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    address: p.address,
+    jurisdiction: p.jurisdiction,
+    occupancyType: p.occupancy_type,
+    display_status: p.display_status,
+    status: p.status as any,
+    dateCreated: p.created_at,
+    lastUpdated: p.updated_at,
+    squareFootage: p.square_footage,
+  }));
 
+  const totalPages = data?.total ? Math.ceil(data.total / pageSize) : 0;
   return (
     <div className="space-y-6">
       <SearchInput
         value={searchQuery}
-        onChange={(event) => setSearchQuery(event.target.value)}
+        onChange={(event) => {
+          setSearchQuery(event.target.value);
+          setPage(1);
+        }}
         placeholder="Search projects..."
         aria-label="Search projects"
       />
@@ -74,14 +89,14 @@ export function ProjectsContent({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <FilterSelect
             value={statusFilter}
-            onChange={setStatusFilter}
+            onChange={(val) => { setStatusFilter(val); setPage(1); }}
             options={toSelectOptions(PROJECT_STATUS_FILTER_OPTIONS)}
             aria-label="Filter by status"
           />
 
           <FilterSelect
             value={occupancyFilter}
-            onChange={setOccupancyFilter}
+            onChange={(val) => { setOccupancyFilter(val); setPage(1); }}
             options={toSelectOptions(PROJECT_OCCUPANCY_FILTER_OPTIONS)}
             aria-label="Filter by occupancy"
           />
@@ -95,7 +110,7 @@ export function ProjectsContent({
 
           <FilterSelect
             value={jurisdictionFilter}
-            onChange={setJurisdictionFilter}
+            onChange={(val) => { setJurisdictionFilter(val); setPage(1); }}
             options={toSelectOptions(PROJECT_JURISDICTION_FILTER_OPTIONS)}
             aria-label="Filter by jurisdiction"
           />
@@ -104,16 +119,41 @@ export function ProjectsContent({
         <ViewModeToggle value={viewMode} onChange={setViewMode} />
       </div>
 
-      {viewMode === "grid" ? (
-        <ProjectCardGrid
-          projects={filteredProjects}
-          projectsBasePath={projectsBasePath}
-        />
+      {isError ? (
+        <div className="flex h-64 items-center justify-center text-destructive">
+          Error loading projects.
+        </div>
+      ) : displayProjects.length === 0 && !isLoading ? (
+        <div className="flex h-64 items-center justify-center text-stat-label w-full">
+          <TableEmptyState
+            icon={<Rocket className="h-8 w-8" />}
+            title="No Projects found"
+          // description="No Projects found Create"
+          />
+        </div>
       ) : (
-        <ProjectsListView
-          projects={filteredProjects}
-          projectsBasePath={projectsBasePath}
-        />
+        <>
+          {viewMode === "grid" ? (
+            <ProjectCardGrid
+              projects={displayProjects}
+              projectsBasePath={projectsBasePath}
+              isLoading={isLoading}
+            />
+          ) : (
+            <ProjectsListView
+              projects={displayProjects}
+              projectsBasePath={projectsBasePath}
+              isLoading={isLoading}
+            />
+          )}
+
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            className="mt-6"
+          />
+        </>
       )}
     </div>
   );

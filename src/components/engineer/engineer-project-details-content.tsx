@@ -59,27 +59,9 @@ export function EngineerProjectDetailsContent({
 
       <EngineerReviewPanel review={review} />
 
-      <UnderlineTabs
-        tabs={[...PROJECT_DETAIL_TABS]}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        aria-label="Project review sections"
-      />
-
-      <TabPanel
-        id={`tabpanel-${activeTab}`}
-        labelledBy={`tab-${activeTab}`}
-      >
-        {activeTab === "results" ? (
+      
           <ResultsStep projectInfo={projectInfo} />
-        ) : null}
-        {activeTab === "history" ? (
-          <VersionHistoryPanel versions={versions} />
-        ) : null}
-        {activeTab === "activity" ? (
-          <ActivityLogPanel entries={activity} />
-        ) : null}
-      </TabPanel>
+       
     </div>
   );
 }

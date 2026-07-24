@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { dmSans, inter } from "@/config/fonts";
 import { siteConfig } from "@/config/site";
+import { Toaster } from "sonner";
+import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
 
@@ -29,7 +31,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${dmSans.variable} ${inter.variable}`}>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen" suppressHydrationWarning>
+        <QueryProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </QueryProvider>
+      </body>
     </html>
   );
 }

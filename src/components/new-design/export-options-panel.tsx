@@ -14,6 +14,15 @@ import {
 import { cn } from "@/lib/utils/cn";
 import type { ExportFormatId } from "@/types/new-design";
 
+export interface ExportSectionsPayload {
+  design_recommendations: boolean;
+  bom: boolean;
+  compliance_checklist: boolean;
+  design_narrative: boolean;
+  nfpa_disclaimer: boolean;
+  company_branding: boolean;
+}
+
 const FORMAT_ICONS: Record<ExportFormatId, React.ReactNode> = {
   pdf: <FileText className="size-5 text-slate-500" />,
   csv: <BarChart3 className="size-5 text-slate-500" />,
@@ -22,9 +31,11 @@ const FORMAT_ICONS: Record<ExportFormatId, React.ReactNode> = {
 };
 
 interface ExportOptionsPanelProps {
-  onDownload?: (format: ExportFormatId) => void;
+  onDownload?: (format: ExportFormatId, sections: ExportSectionsPayload) => void;
   onExportCsv?: () => void;
   onSendEmail?: () => void;
+  isExporting?: boolean;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -32,6 +43,8 @@ export function ExportOptionsPanel({
   onDownload,
   onExportCsv,
   onSendEmail,
+  isExporting = false,
+  disabled = false,
   className,
 }: ExportOptionsPanelProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormatId>("pdf");
@@ -52,6 +65,18 @@ export function ExportOptionsPanel({
         label: option.label,
         checked: includeOptions[option.id] ?? option.defaultChecked,
       })),
+    [includeOptions],
+  );
+
+  const sections = useMemo<ExportSectionsPayload>(
+    () => ({
+      design_recommendations: includeOptions["design-recommendations"] ?? true,
+      bom: includeOptions.bom ?? true,
+      compliance_checklist: includeOptions.compliance ?? true,
+      design_narrative: includeOptions.narrative ?? true,
+      nfpa_disclaimer: includeOptions["nfpa-disclaimer"] ?? false,
+      company_branding: includeOptions["company-branding"] ?? false,
+    }),
     [includeOptions],
   );
 
@@ -93,14 +118,16 @@ export function ExportOptionsPanel({
       <div className="space-y-3 pt-2">
         <button
           type="button"
-          onClick={() => onDownload?.(selectedFormat)}
+          onClick={() => onDownload?.(selectedFormat, sections)}
+          disabled={disabled || isExporting}
           className={cn(
             buttonVariants({ variant: "primary" }),
             "h-11 w-full max-w-none gap-2",
+            (disabled || isExporting) && "pointer-events-none opacity-60",
           )}
         >
           <Download className="size-4" aria-hidden="true" />
-          {EXPORT_DOWNLOAD_LABELS[selectedFormat]}
+          {isExporting ? "Creating export..." : EXPORT_DOWNLOAD_LABELS[selectedFormat]}
         </button>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -108,6 +135,7 @@ export function ExportOptionsPanel({
             type="button"
             variant="outline"
             className="h-11 max-w-none gap-2"
+            disabled={disabled || isExporting}
             onClick={onExportCsv}
           >
             <Download className="size-4" aria-hidden="true" />
@@ -117,6 +145,7 @@ export function ExportOptionsPanel({
             type="button"
             variant="outline"
             className="h-11 max-w-none gap-2"
+            disabled={disabled || isExporting}
             onClick={onSendEmail}
           >
             <Mail className="size-4" aria-hidden="true" />

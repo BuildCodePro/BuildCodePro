@@ -1,8 +1,8 @@
 import type { DesignChecklistItem, DesignStep } from "@/types/new-design";
 
 export const DESIGN_WIZARD_STEPS: DesignStep[] = [
-  { id: "upload", number: 1, label: "Upload Drawings" },
-  { id: "project-info", number: 2, label: "Project Info" },
+  { id: "project-info", number: 1, label: "Project Info" },
+  { id: "upload", number: 2, label: "Upload Drawing" },
   { id: "ai-analysis", number: 3, label: "AI Analysis" },
   { id: "results", number: 4, label: "Results" },
 ];

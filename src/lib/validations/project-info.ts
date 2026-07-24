@@ -24,13 +24,13 @@ export function validateProjectInfoForm(
 
   if (!data.squareFootage.trim()) {
     errors.squareFootage = "Square footage is required";
-  } else if (!/^\d+([.,]\d+)?$/.test(data.squareFootage.replace(/,/g, ""))) {
+  } else if (!/^\d+([.,]\d+)?$/.test(data.squareFootage.trim().replace(/,/g, ""))) {
     errors.squareFootage = "Enter a valid number";
   }
 
   if (!data.numberOfFloors.trim()) {
     errors.numberOfFloors = "Number of floors is required";
-  } else if (!/^\d+$/.test(data.numberOfFloors)) {
+  } else if (!/^\d+$/.test(data.numberOfFloors.trim())) {
     errors.numberOfFloors = "Enter a valid whole number";
   }
 

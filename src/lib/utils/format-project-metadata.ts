@@ -1,7 +1,7 @@
 import type { ProjectInfoFormData } from "@/types/new-design";
 
 const OCCUPANCY_TYPE_CODES: Record<string, string> = {
-  Assembly: "A-2",
+  assembly: "A-2",
   Business: "B",
   Residential: "R-2",
   Educational: "E",
@@ -13,7 +13,7 @@ const OCCUPANCY_TYPE_CODES: Record<string, string> = {
 
 export function formatOccupancyType(occupancyType: string): string {
   if (!occupancyType) {
-    return "Assembly (A-2)";
+    return "assembly (A-2)";
   }
 
   const code = OCCUPANCY_TYPE_CODES[occupancyType];

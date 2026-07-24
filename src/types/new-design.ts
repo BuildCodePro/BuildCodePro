@@ -17,7 +17,10 @@ export interface UploadedFile {
   name: string;
   size: number;
   type: string;
-  status: UploadedFileStatus;
+  status: "ready" | "uploading" | "uploaded" | "error";
+  drawingId?: string;   // returned by backend after successful upload
+  errorMessage?: string;
+  file?: File;
 }
 
 export interface DesignChecklistItem {
@@ -84,6 +87,9 @@ export interface DesignRecommendation {
   accent: RecommendationAccent;
   badge?: string;
   badgeVariant?: RecommendationBadgeVariant;
+
+  // AI Recommendation details
+  items?: string[];
 }
 
 export interface DesignResults {
@@ -117,7 +123,7 @@ export interface BomCategory {
   items: BomLineItem[];
 }
 
-export type ComplianceItemStatus = "pass" | "review-needed" | "concern";
+export type ComplianceItemStatus = "pass" | "review_needed" | "concern" | "review-needed";
 
 export interface ComplianceChecklistItem {
   id: string;
@@ -164,6 +170,8 @@ export interface ExportIncludeOption {
 }
 
 export interface ExportPreviewData {
+  companyName?: string;
+  companyLogoUrl?: string | null;
   projectName: string;
   occupancy: string;
   address: string;
@@ -188,9 +196,9 @@ export const DEFAULT_PROJECT_INFO: ProjectInfoFormData = {
   numberOfFloors: "",
   occupancyType: "",
   optionalSystems: {
-    sprinkler: true,
+    sprinkler: false,
     elevator: false,
-    ductDetectors: true,
+    ductDetectors: false,
     voiceEvacuation: false,
   },
   specialNotes: "",

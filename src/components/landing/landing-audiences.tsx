@@ -17,7 +17,7 @@ export function LandingAudiences() {
               <span className="text-ai-gradient">bid</span>
             </h2>
             <p className="mt-4 font-body text-base leading-relaxed text-slate-400">
-              Contractors, estimators, and licensed engineers each get a
+              company_owners, estimators, and licensed engineers each get a
               purpose-built workspace with the right permissions and workflows.
             </p>
           </div>

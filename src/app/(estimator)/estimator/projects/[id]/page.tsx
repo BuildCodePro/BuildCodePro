@@ -1,34 +1,61 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+// import type { Metadata } from "next";
+// import { notFound } from "next/navigation";
 
-import { EstimatorProjectDetailsContent } from "@/components/estimator";
-import { getEstimatorProjectById } from "@/lib/data/estimator";
+// import { EstimatorProjectDetailsContent } from "@/components/estimator";
+// import { getEstimatorProjectById } from "@/lib/data/estimator";
 
-interface EstimatorProjectDetailsPageProps {
+// interface EstimatorProjectDetailsPageProps {
+//   params: Promise<{ id: string }>;
+// }
+
+// export async function generateMetadata({
+//   params,
+// }: EstimatorProjectDetailsPageProps): Promise<Metadata> {
+//   const { id } = await params;
+//   const project = getEstimatorProjectById(id);
+
+//   return {
+//     title: project ? project.name : "Project Details",
+//     description: "View estimation results, version history, and activity log",
+//   };
+// }
+
+// export default async function EstimatorProjectDetailsPage({
+//   params,
+// }: EstimatorProjectDetailsPageProps) {
+//   const { id } = await params;
+//   const project = getEstimatorProjectById(id);
+
+//   if (!project) {
+//     notFound();
+//   }
+
+//   return <EstimatorProjectDetailsContent project={project} />;
+// }
+
+"use client";
+
+import { use } from "react";
+import { ProjectDetailsContent } from "@/components/projects/project-details-content";
+import { mapProjectDtoToDashboardProject, useGetProjectQuery } from "@/services/projectService";
+
+interface Props {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: EstimatorProjectDetailsPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const project = getEstimatorProjectById(id);
+export default function EstimatorProjectDetailsPage({ params }: Props) {
+  const { id } = use(params);
 
-  return {
-    title: project ? project.name : "Project Details",
-    description: "View estimation results, version history, and activity log",
-  };
-}
+  const { data, isLoading } = useGetProjectQuery(id);
 
-export default async function EstimatorProjectDetailsPage({
-  params,
-}: EstimatorProjectDetailsPageProps) {
-  const { id } = await params;
-  const project = getEstimatorProjectById(id);
-
-  if (!project) {
-    notFound();
+  if (isLoading || !data) {
+    return <div>Loading...</div>;
   }
 
-  return <EstimatorProjectDetailsContent project={project} />;
+  return (
+    <ProjectDetailsContent
+      project={mapProjectDtoToDashboardProject(data)}
+      backHref="/estimator/projects"
+    />
+  );
 }

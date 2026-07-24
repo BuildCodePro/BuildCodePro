@@ -10,9 +10,10 @@ const badgeVariants = cva(
       variant: {
         completed: "bg-emerald-50 text-emerald-700",
         exported: "bg-emerald-50 text-emerald-700",
-        "review-needed": "bg-amber-50 text-amber-700",
+        "review_needed": "bg-amber-50 text-amber-700",
         processing: "bg-sky-50 text-sky-700",
         draft: "bg-slate-100 text-slate-600",
+        ready: "bg-emerald-50 text-emerald-700",
       },
     },
     defaultVariants: {
@@ -23,10 +24,11 @@ const badgeVariants = cva(
 
 const statusLabels: Record<ProjectStatus, string> = {
   completed: "Completed",
-  "review-needed": "Review Needed",
+  "review_needed": "Review Needed",
   processing: "Processing",
   draft: "Draft",
   exported: "Exported",
+  ready: "Ready",
 };
 
 interface StatusBadgeProps extends VariantProps<typeof badgeVariants> {

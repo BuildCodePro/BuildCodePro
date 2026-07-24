@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { getEstimatorPageTitle } from "@/lib/utils/get-estimator-page-title";
-import { getSession } from "@/lib/auth/session";
 import { cn } from "@/lib/utils/cn";
 
 import { EstimatorHeader } from "./estimator-header";
@@ -19,13 +18,6 @@ export function EstimatorShell({ children }: EstimatorShellProps) {
   const title = getEstimatorPageTitle(pathname);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [userName, setUserName] = useState("Estimator");
-
-  useEffect(() => {
-    const session = getSession();
-    if (session?.user.name) {
-      setUserName(session.user.name);
-    }
-  }, []);
 
   return (
     <div className="flex min-h-screen bg-surface">

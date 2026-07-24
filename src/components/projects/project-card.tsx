@@ -39,7 +39,7 @@ export function ProjectCard({
             sizes="(max-width: 768px) 100vw, 344px"
           />
           <StatusBadge
-            status={project.status}
+            status={project.display_status}
             className="absolute top-2.5 right-2.5 shadow-sm"
           />
         </div>
@@ -70,17 +70,59 @@ export function ProjectCard({
   );
 }
 
+import { Skeleton } from "@/components/ui/skeleton";
+
+export function ProjectCardSkeleton({ className }: { className?: string }) {
+  return (
+    <article
+      className={cn(
+        "flex w-full max-w-sm flex-col gap-6 rounded-[16px] border border-border bg-white px-5 py-6",
+        className,
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="h-6 w-16 rounded-full" />
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+    </article>
+  );
+}
+
 interface ProjectCardGridProps {
   projects: DashboardProject[];
   className?: string;
   projectsBasePath?: string;
+  isLoading?: boolean;
 }
 
 export function ProjectCardGrid({
   projects,
   className,
   projectsBasePath,
+  isLoading = false,
 }: ProjectCardGridProps) {
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          "grid grid-cols-1 justify-items-center gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:justify-items-stretch",
+          className,
+        )}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <ProjectCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

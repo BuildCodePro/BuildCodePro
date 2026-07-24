@@ -9,7 +9,7 @@ export default function DashboardGroupLayout({
   children,
 }: DashboardGroupLayoutProps) {
   return (
-    <RoleAuthGuard allowedRoles={["company"]}>
+    <RoleAuthGuard allowedRoles={["company_owner"]}>
       <DashboardShell>{children}</DashboardShell>
     </RoleAuthGuard>
   );

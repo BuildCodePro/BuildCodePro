@@ -39,19 +39,31 @@ interface PdfReportPreviewProps {
 }
 
 export function PdfReportPreview({ data, className }: PdfReportPreviewProps) {
+  const companyName = data.companyName || "BuildCode Pro";
+
   return (
     <div className={cn("space-y-2", className)}>
       <div>
         <h3 className="text-narrative-title">PDF Report Preview</h3>
-        <p className="mt-1 text-stat-label">{data.projectName}</p>
+        <p className="mt-1 text-stat-label">
+          {companyName} • {data.projectName}
+        </p>
       </div>
 
       <div className="overflow-hidden rounded-[12px] border border-border bg-white shadow-sm">
         <div className="flex items-center justify-between gap-3 bg-sidebar px-4 py-3 text-white">
           <div className="min-w-0 space-y-1">
-            <Logo height={22} className="brightness-0 invert" />
+            {data.companyLogoUrl ? (
+              <img
+                src={data.companyLogoUrl}
+                alt={`${companyName} logo`}
+                className="h-[22px] max-w-[140px] object-contain"
+              />
+            ) : (
+              <Logo height={22} className="brightness-0 invert" />
+            )}
             <p className="font-body text-[10px] text-slate-400">
-              Fire Alarm Design Estimate
+              {companyName} • Fire Alarm Design Estimate
             </p>
           </div>
           <p className="max-w-[140px] truncate text-right font-body text-[10px] font-semibold sm:max-w-none sm:text-xs">

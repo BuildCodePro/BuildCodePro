@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -26,12 +27,18 @@ interface ReviewQueueTableProps {
   items: ReviewQueueItem[];
   projectsBasePath?: string;
   className?: string;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export function ReviewQueueTable({
   items,
   projectsBasePath = routes.engineer.projects,
   className,
+  currentPage,
+  totalPages,
+  onPageChange,
 }: ReviewQueueTableProps) {
   return (
     <section
@@ -111,6 +118,15 @@ export function ReviewQueueTable({
           ))}
         </TableBody>
       </Table>
+
+      {currentPage && totalPages && onPageChange && totalPages > 1 ? (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          className="mt-5"
+        />
+      ) : null}
     </section>
   );
 }

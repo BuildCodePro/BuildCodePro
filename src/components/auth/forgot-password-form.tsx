@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 import { validateForgotPasswordForm } from "@/lib/validations/auth";
 import type { ForgotPasswordFormData } from "@/types/auth";
+import { useForgetPasswordMutation } from "@/services/authService";
+import { toast } from "sonner";
 
 export function ForgotPasswordForm() {
   const [formData, setFormData] = useState<ForgotPasswordFormData>({
@@ -19,11 +21,15 @@ export function ForgotPasswordForm() {
   const [errors, setErrors] = useState<
     Partial<Record<keyof ForgotPasswordFormData, string>>
   >({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [isEmailSent, setIsEmailSent] = useState(false);
+
+  const { mutate: forgetPassword, isPending: isSubmitting } = useForgetPasswordMutation();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    setAuthError(null);
 
     const validation = validateForgotPasswordForm(formData);
     setErrors(validation.errors);
@@ -32,13 +38,24 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    // Auth integration will be wired in Milestone 1
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    setIsSubmitting(false);
-    setIsEmailSent(true);
+    forgetPassword(
+      { email: formData.email },
+      {
+        onSuccess: (data: any) => {
+          setIsEmailSent(true);
+          const message = data.message;
+          toast.success(message)
+        },
+        onError: (error: any) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : error.data.message;
+          setAuthError(message);
+          toast.error(message)
+        },
+      }
+    );
   };
 
   if (isEmailSent) {
@@ -96,6 +113,12 @@ export function ForgotPasswordForm() {
           }
           error={errors.email}
         />
+
+        {authError ? (
+          <p className="font-body text-sm text-primary" role="alert">
+            {authError}
+          </p>
+        ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="mt-1">
           {isSubmitting ? "Sending..." : "Send Reset Link"}

@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { getSuperAdminPageTitle } from "@/lib/utils/get-super-admin-page-title";
-import { getSession } from "@/lib/auth/session";
 import { cn } from "@/lib/utils/cn";
 
 import { SuperAdminHeader } from "./super-admin-header";
@@ -20,12 +19,7 @@ export function SuperAdminShell({ children }: SuperAdminShellProps) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [userName, setUserName] = useState("Platform Admin");
 
-  useEffect(() => {
-    const session = getSession();
-    if (session?.user.name) {
-      setUserName(session.user.name);
-    }
-  }, []);
+
 
   return (
     <div className="flex min-h-screen bg-surface">

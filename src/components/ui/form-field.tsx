@@ -1,8 +1,9 @@
 import { Input, type InputProps } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface FormFieldProps extends InputProps {
+interface FormFieldProps extends Omit<InputProps, 'children'> {
   label: string;
+  children?: React.ReactNode;
 }
 
 export function FormField({
@@ -12,6 +13,7 @@ export function FormField({
   error,
   leftIcon,
   rightSlot,
+  children,
   ...inputProps
 }: FormFieldProps) {
   const fieldId = id ?? name;
@@ -19,14 +21,19 @@ export function FormField({
   return (
     <div className="space-y-2">
       <Label htmlFor={fieldId}>{label}</Label>
-      <Input
-        id={fieldId}
-        name={name}
-        error={error}
-        leftIcon={leftIcon}
-        rightSlot={rightSlot}
-        {...inputProps}
-      />
+      {children ? (
+        children
+      ) : (
+        <Input
+          id={fieldId}
+          className="max-h-[40px]"
+          name={name}
+          error={error}
+          leftIcon={leftIcon}
+          rightSlot={rightSlot}
+          {...inputProps}
+        />
+      )}
     </div>
   );
 }

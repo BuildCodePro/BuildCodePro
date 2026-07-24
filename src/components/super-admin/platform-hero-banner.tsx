@@ -20,7 +20,7 @@ export function PlatformHeroBanner({ className }: PlatformHeroBannerProps) {
           Monitor companies, usage, and subscriptions
         </h2>
         <p className="text-hero-subtitle max-w-2xl">
-          Oversee contractor accounts, track AI design usage across the platform,
+          Oversee company_owner accounts, track AI design usage across the platform,
           and manage subscription plans per the BuildCode Pro billing model.
         </p>
       </div>

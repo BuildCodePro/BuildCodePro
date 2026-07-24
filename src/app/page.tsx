@@ -4,7 +4,7 @@ import { LandingPage } from "@/components/landing";
 import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
-  title: "AI Fire Alarm Estimation for Contractors",
+  title: "AI Fire Alarm Estimation for company_owners",
   description: siteConfig.description,
 };
 

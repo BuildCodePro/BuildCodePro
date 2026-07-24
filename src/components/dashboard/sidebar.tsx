@@ -5,12 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 
 import { Logo } from "@/components/icons/logo";
-import { mainNavigation } from "@/config/navigation";
+import { getMainNavigation } from "@/config/navigation";
 import { routes } from "@/config/routes";
 import { logout } from "@/lib/auth/session";
 import { cn } from "@/lib/utils/cn";
 
 import { SidebarNavItem } from "./sidebar-nav-item";
+import { useAuthStore } from "@/store/auth-store";
+
 
 interface SidebarProps {
   className?: string;
@@ -20,7 +22,12 @@ interface SidebarProps {
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
 
+  const navigation = getMainNavigation({
+    team_accounts: user?.team_accounts,
+    dedicated_support: user?.dedicated_support,
+  });
   const handleLogout = () => {
     logout();
     onNavigate?.();
@@ -51,7 +58,7 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       </div>
 
       <nav className="flex flex-1 flex-col items-stretch gap-1 overflow-y-auto px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {mainNavigation.map((item) => (
+        {navigation.map((item: any) => (
           <SidebarNavItem
             key={item.href}
             item={item}

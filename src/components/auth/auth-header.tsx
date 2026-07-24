@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils/cn";
 
 interface AuthHeaderProps {
-  title: string;
-  subtitle: string;
+  title?: string;
+  subtitle?: string;
   className?: string;
 }
 

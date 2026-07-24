@@ -6,7 +6,6 @@ import type {
   ProjectInfoFormData,
 } from "@/types/new-design";
 
-import { BOM_TOTAL_ITEMS } from "./bom";
 import { MOCK_COMPLIANCE_RESULTS } from "./compliance";
 import { getProjectDisplayName } from "./results";
 import {
@@ -93,7 +92,7 @@ export function buildExportPreviewData(
     initiatingDevices: "42",
     notificationDevices: "28",
     controlDevices: "6",
-    totalItems: String(results?.bomTotalItems ?? BOM_TOTAL_ITEMS),
+    totalItems: String(results?.bomTotalItems),
     estimatedCable: "4,200 ft",
     estimatedConduit: "1,800 ft",
     complianceScore: `${compliance.score}%`,

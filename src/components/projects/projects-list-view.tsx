@@ -14,18 +14,26 @@ import {
 import { routes } from "@/config/routes";
 import { cn } from "@/lib/utils/cn";
 import type { DashboardProject } from "@/types/dashboard";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { formatDate } from "@/lib/utils/format-date";
 
 interface ProjectsListViewProps {
   projects: DashboardProject[];
   className?: string;
   projectsBasePath?: string;
+  isLoading?: boolean;
 }
 
 export function ProjectsListView({
   projects,
   className,
   projectsBasePath = routes.projects,
+  isLoading = false,
 }: ProjectsListViewProps) {
+  if (isLoading) {
+    return <TableSkeleton columns={5} rows={5} className={className} />;
+  }
+
   return (
     <section
       className={cn(
@@ -53,10 +61,10 @@ export function ProjectsListView({
                 {project.occupancyType}
               </TableCell>
               <TableCell>
-                <StatusBadge status={project.status} />
+                <StatusBadge status={project?.display_status} />
               </TableCell>
               <TableCell className="text-stat-label">
-                {project.createdAt ?? project.lastUpdated}
+                {formatDate(project.lastUpdated)}
               </TableCell>
               <TableCell className="text-right">
                 <Link

@@ -1,6 +1,6 @@
 # BuildCode Pro
 
-AI-powered fire alarm design and estimation platform for contractors. Upload construction drawings, run NFPA 72 analysis, and receive bid-ready outputs: device recommendations, material takeoffs (BOM), compliance checklists, design narratives, and exportable PDF/CSV reports.
+AI-powered fire alarm design and estimation platform for company_owners. Upload construction drawings, run NFPA 72 analysis, and receive bid-ready outputs: device recommendations, material takeoffs (BOM), compliance checklists, design narratives, and exportable PDF/CSV reports.
 
 This repository is the **frontend** for BuildCode Pro, built with Next.js App Router. It currently uses mock authentication and static demo data while backend services (Supabase, Stripe, AI engine) are integrated per the product milestone plan.
 
@@ -24,9 +24,9 @@ This repository is the **frontend** for BuildCode Pro, built with Next.js App Ro
 
 ## Features
 
-### Company (Contractor Admin)
+### Company (company_owner Admin)
 
-Full contractor workspace for small and medium fire alarm businesses.
+Full company_owner workspace for small and medium fire alarm businesses.
 
 | Module | Description |
 |--------|-------------|
@@ -128,7 +128,7 @@ Mock users are defined in `src/lib/auth/mock-users.ts`. Use these to explore eac
 
 | Role | Email | Password | Dashboard |
 |------|-------|----------|-----------|
-| Company (Contractor) | `john@acmefire.com` | `Company@123` | `/dashboard` |
+| Company (company_owner) | `john@acmefire.com` | `Company@123` | `/dashboard` |
 | Estimator | `sarah@acmefire.com` | `Estimator@123` | `/estimator` |
 | Engineer (PE) | `mike@acmefire.com` | `Engineer@123` | `/engineer` |
 | Super Admin | `admin@buildcodepro.com` | `SuperAdmin@123` | `/super-admin` |
@@ -219,7 +219,7 @@ buildcodepro-FE/
 ├── src/
 │   ├── app/                    # Next.js App Router
 │   │   ├── (auth)/             # Login, signup, password flows
-│   │   ├── (dashboard)/        # Company contractor routes
+│   │   ├── (dashboard)/        # Company company_owner routes
 │   │   ├── (estimator)/        # Estimator routes
 │   │   ├── (engineer)/         # PE reviewer routes
 │   │   ├── (super-admin)/      # Platform admin routes
@@ -278,7 +278,7 @@ Role-specific shells reuse shared building blocks where possible:
 - `StatsGrid`, `RecentProjectsTable` — dashboard metrics
 - `DesignWizard` — company and estimator new-design flows
 - `ProjectDetailsContent` — shared project details for company and estimator
-- `SupportContent` — help articles, FAQs, and tickets across contractor roles
+- `SupportContent` — help articles, FAQs, and tickets across company_owner roles
 
 ### Data layer (current)
 
@@ -319,7 +319,7 @@ Additional variables for Supabase, Stripe, and AI services will be added when ba
 
 ## Product Scope
 
-BuildCode Pro targets the **pre-bid estimation stage** for fire alarm contractors. AI output accelerates BOM and compliance work but does **not** replace licensed engineering review or permit approval.
+BuildCode Pro targets the **pre-bid estimation stage** for fire alarm company_owners. AI output accelerates BOM and compliance work but does **not** replace licensed engineering review or permit approval.
 
 ### Subscription plans (PRD)
 

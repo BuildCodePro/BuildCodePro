@@ -3,142 +3,167 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 import { AuthDivider } from "@/components/auth/auth-divider";
 import { AuthFooterLink, SocialLoginButton } from "@/components/auth/auth-footer";
 import { AuthFormShell } from "@/components/auth/auth-form-shell";
-import { AuthHeader } from "@/components/auth/auth-header";
 import { FormField } from "@/components/ui/form-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { routes } from "@/config/routes";
-import { validateSignupForm } from "@/lib/validations/auth";
-import type { SignupFormData } from "@/types/auth";
+import { useRegisterMutation } from "@/services/authService";
+import { toast } from "sonner";
+import { PasswordField } from "../ui";
+
+const signupSchema = z
+  .object({
+    ownerName: z
+      .string()
+      .min(1, "Owner name is required")
+      .min(2, "Owner name must be at least 2 characters"),
+    companyName: z
+      .string()
+      .min(1, "Company name is required")
+      .min(2, "Company name must be at least 2 characters"),
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Enter a valid email address"),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+    acceptTerms: z
+      .boolean()
+      .refine((val) => val === true, {
+        message: "You must accept the Terms and Privacy Policy",
+      }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type SignupFormValues = z.infer<typeof signupSchema>;
+
+interface RegisterPayload {
+  email: string;
+  owner_name: string;
+  company_name: string;
+  role: "company_owner";
+  is_verified: boolean;
+  password: string;
+}
 
 export function SignupForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState<SignupFormData>({
-    fullName: "",
-    companyName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    acceptTerms: false,
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      ownerName: "",
+      companyName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      acceptTerms: false,
+    },
   });
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof SignupFormData, string>>
-  >({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const { mutate: registerUser, isPending } = useRegisterMutation();
 
-    const validation = validateSignupForm(formData);
-    setErrors(validation.errors);
+  const acceptTerms = watch("acceptTerms");
 
-    if (!validation.success) {
-      return;
-    }
+  const onSubmit = (values: SignupFormValues) => {
+    setApiError(null);
 
-    setIsSubmitting(true);
+    const payload: RegisterPayload = {
+      email: values.email,
+      owner_name: values.ownerName,
+      company_name: values.companyName,
+      role: "company_owner",
+      is_verified: true,
+      password: values.password,
+    };
 
-    // Auth integration will be wired in Milestone 1
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    setIsSubmitting(false);
-    router.push(`${routes.verifyEmail}?email=${encodeURIComponent(formData.email)}`);
+    registerUser(payload, {
+      onSuccess: () => {
+        router.push(
+          `${routes.verifyEmail}?email=${encodeURIComponent(values.email)}`,
+        );
+        toast.success("Verification email sent on your email id.")
+      },
+      onError: (error: any) => {
+        const message =
+          error instanceof Error
+            ? error.message
+            : error.data.message;
+        setApiError(message);
+      },
+    });
   };
 
   return (
     <AuthFormShell size="wide">
-      <AuthHeader
-        title="Create your account"
-        subtitle="Start your free trial — no credit card required"
-        className="mb-8"
-      />
-
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
         className="flex w-full flex-col gap-4"
         noValidate
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
-            label="Full Name"
-            name="fullName"
+            label="Owner Name"
             type="text"
             autoComplete="name"
             placeholder="John Doe"
-            value={formData.fullName}
-            onChange={(event) =>
-              setFormData((prev) => ({
-                ...prev,
-                fullName: event.target.value,
-              }))
-            }
-            error={errors.fullName}
+            error={errors.ownerName?.message}
+            {...register("ownerName")}
           />
 
           <FormField
             label="Company Name"
-            name="companyName"
             type="text"
             autoComplete="organization"
             placeholder="Acme Fire Protection"
-            value={formData.companyName}
-            onChange={(event) =>
-              setFormData((prev) => ({
-                ...prev,
-                companyName: event.target.value,
-              }))
-            }
-            error={errors.companyName}
+            error={errors.companyName?.message}
+            {...register("companyName")}
           />
         </div>
 
         <FormField
           label="Email Address"
-          name="email"
           type="email"
           autoComplete="email"
           placeholder="you@company.com"
-          value={formData.email}
-          onChange={(event) =>
-            setFormData((prev) => ({ ...prev, email: event.target.value }))
-          }
-          error={errors.email}
+          error={errors.email?.message}
+          {...register("email")}
         />
 
-        <FormField
+        <PasswordField
           label="Password"
-          name="password"
-          type="password"
           autoComplete="new-password"
           placeholder="Create a password"
-          value={formData.password}
-          onChange={(event) =>
-            setFormData((prev) => ({
-              ...prev,
-              password: event.target.value,
-            }))
-          }
-          error={errors.password}
+          error={errors.password?.message}
+          {...register("password")}
         />
 
-        <FormField
+        <PasswordField
           label="Confirm Password"
-          name="confirmPassword"
-          type="password"
           autoComplete="new-password"
           placeholder="Re-enter password"
-          value={formData.confirmPassword}
-          onChange={(event) =>
-            setFormData((prev) => ({
-              ...prev,
-              confirmPassword: event.target.value,
-            }))
-          }
-          error={errors.confirmPassword}
+          error={errors.confirmPassword?.message}
+          {...register("confirmPassword")}
         />
 
         <div className="pt-1">
@@ -146,12 +171,11 @@ export function SignupForm() {
             <Checkbox
               id="acceptTerms"
               className="mt-0.5"
-              checked={formData.acceptTerms}
+              checked={acceptTerms}
               onChange={(event) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  acceptTerms: event.target.checked,
-                }))
+                setValue("acceptTerms", event.target.checked, {
+                  shouldValidate: true,
+                })
               }
             />
             <span className="font-body text-sm leading-snug text-muted-foreground">
@@ -173,13 +197,17 @@ export function SignupForm() {
           </label>
           {errors.acceptTerms ? (
             <p className="mt-1.5 font-body text-xs text-primary">
-              {errors.acceptTerms}
+              {errors.acceptTerms.message}
             </p>
           ) : null}
         </div>
 
-        <Button type="submit" disabled={isSubmitting} className="mt-2 max-w-none">
-          {isSubmitting ? "Creating account..." : "Create Account"}
+        {apiError ? (
+          <p className="font-body text-sm text-primary">{apiError}</p>
+        ) : null}
+
+        <Button type="submit" disabled={isPending} className="mt-2 max-w-none">
+          {isPending ? "Creating account..." : "Create Account"}
         </Button>
       </form>
 

@@ -62,6 +62,14 @@ export function RecommendationCard({
       <p className="mt-3 font-body text-xs leading-relaxed text-stat-label">
         {recommendation.description}
       </p>
+
+      {recommendation.items && recommendation.items.length > 0 && (
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+          {recommendation.items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      )}
     </article>
   );
 }

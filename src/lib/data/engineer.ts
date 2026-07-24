@@ -93,7 +93,7 @@ export const reviewQueue: ReviewQueueItem[] = [
 /** Projects assigned to engineer for review */
 export const engineerProjects: DashboardProject[] = projectsList.filter(
   (project) =>
-    project.status === "review-needed" ||
+    project.status === "review_needed" ||
     project.status === "completed" ||
     project.status === "exported",
 );

@@ -10,7 +10,7 @@ export function EstimatorUsageBanner({
   usage,
   className,
 }: EstimatorUsageBannerProps) {
-  const usagePercent = Math.round((usage.used / usage.total) * 100);
+  const usagePercent = usage.total > 0 ? Math.round((usage.used / usage.total) * 100) : 0;
 
   return (
     <section

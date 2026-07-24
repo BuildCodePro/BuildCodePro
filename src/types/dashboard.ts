@@ -1,12 +1,13 @@
 export type ProjectStatus =
   | "completed"
-  | "review-needed"
+  | "review_needed"
   | "processing"
   | "draft"
-  | "exported";
+  | "exported"
+  | "ready";
 
 export interface DashboardStat {
-  id: string;
+  id?: string;
   label: string;
   value: string;
   change?: {
@@ -22,6 +23,7 @@ export interface DashboardProject {
   address: string;
   occupancyType: string;
   status: ProjectStatus;
+  display_status: ProjectStatus;
   lastUpdated: string;
   createdAt?: string;
   imageUrl?: string;

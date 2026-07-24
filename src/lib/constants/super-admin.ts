@@ -14,7 +14,7 @@ export const COMPANY_STATUS_FILTER_OPTIONS = [
 
 export const USER_ROLE_FILTER_OPTIONS = [
   { value: "all", label: "All Roles" },
-  { value: "company_admin", label: "Company Admin" },
+  { value: "company_owner", label: "Company Admin" },
   { value: "estimator", label: "Estimator" },
   { value: "engineer", label: "Engineer" },
 ] as const;

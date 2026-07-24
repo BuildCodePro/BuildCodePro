@@ -47,7 +47,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
     id: "compliance",
     title: "Compliance Validation",
     description:
-      "Occupancy-based NFPA rules, jurisdiction notes, and pass / review-needed flags so nothing slips through before PE review.",
+      "Occupancy-based NFPA rules, jurisdiction notes, and pass / review_needed flags so nothing slips through before PE review.",
     icon: ClipboardCheck,
   },
   {
@@ -122,8 +122,8 @@ export const LANDING_WORKFLOW_OUTCOMES = [
 
 export const LANDING_AUDIENCES = [
   {
-    id: "contractors",
-    title: "Fire Alarm Contractors",
+    id: "company_owners",
+    title: "Fire Alarm company_owners",
     description:
       "Win more bids with faster pre-bid estimates when engineering resources are limited.",
   },

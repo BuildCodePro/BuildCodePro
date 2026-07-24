@@ -5,12 +5,14 @@ const statusStyles: Record<PlatformUserStatus, string> = {
   active: "bg-emerald-50 text-success",
   pending: "bg-amber-50 text-warning",
   suspended: "bg-red-50 text-primary",
+  inactive: "bg-red-50 text-primary",
 };
 
 const statusLabels: Record<PlatformUserStatus, string> = {
   active: "Active",
   pending: "Pending",
   suspended: "Suspended",
+  inactive: "In-Active"
 };
 
 interface UserStatusBadgeProps {

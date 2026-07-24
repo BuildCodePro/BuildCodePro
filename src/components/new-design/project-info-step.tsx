@@ -81,6 +81,7 @@ export function ProjectInfoStep({
             <FormField
               label="Square Footage"
               name="squareFootage"
+              type="number"
               placeholder="e.g. 45,000"
               value={data.squareFootage}
               onChange={(event) =>
@@ -91,6 +92,7 @@ export function ProjectInfoStep({
             <FormField
               label="Number of Floors"
               name="numberOfFloors"
+              type="number"
               placeholder="e.g. 3"
               value={data.numberOfFloors}
               onChange={(event) =>

@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils/cn";
 
 interface AvatarProps {
   name: string;
+  src?: string | null;
   className?: string;
 }
 
@@ -14,7 +15,21 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-export function Avatar({ name, className }: AvatarProps) {
+export function Avatar({ name, src, className }: AvatarProps) {
+  if (src) {
+    return (
+      <div
+        className={cn(
+          "relative size-9 shrink-0 overflow-hidden rounded-full bg-primary",
+          className,
+        )}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={name} className="size-full object-cover" />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

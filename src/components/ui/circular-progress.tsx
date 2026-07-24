@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/utils/cn";
+import { useEffect, useState } from "react";
 
 interface CircularProgressProps {
   value: number;
@@ -21,9 +24,42 @@ export function CircularProgress({
   progressClassName = "text-accent-cyan",
   "aria-label": ariaLabel = "Progress",
 }: CircularProgressProps) {
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    let animationFrameId: number;
+    const startValue = displayValue;
+    const endValue = value;
+    
+    if (startValue === endValue) return;
+
+    const duration = 800; // Smooth 800ms tween
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // ease-out cubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      
+      setDisplayValue(startValue + (endValue - startValue) * easeProgress);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(endValue);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const clampedValue = Math.min(100, Math.max(0, value));
+  const clampedValue = Math.min(100, Math.max(0, displayValue));
   const offset = circumference - (clampedValue / 100) * circumference;
 
   return (

@@ -25,7 +25,7 @@ export function BrandPanel() {
           <h1 className="text-brand-headline text-white">
             AI-powered fire alarm
             <br />
-            estimation for contractors.
+            estimation for company owners.
           </h1>
           <p className="text-brand-description max-w-lg">
             Upload construction drawings and receive NFPA 72 compliant design

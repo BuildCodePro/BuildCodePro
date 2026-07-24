@@ -29,7 +29,7 @@ export function LandingPricing() {
               Scale with your bidding volume
             </h2>
             <p className="mt-4 font-body text-base leading-relaxed text-stat-label">
-              Monthly design limits that match how fire alarm contractors work —
+              Monthly design limits that match how fire alarm company_owners work —
               upgrade anytime as your pipeline grows.
             </p>
           </div>

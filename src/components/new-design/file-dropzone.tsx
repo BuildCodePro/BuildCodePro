@@ -2,6 +2,7 @@
 
 import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,8 +18,10 @@ import type { UploadedFile } from "@/types/new-design";
 import { UploadedFileList } from "./uploaded-file-list";
 
 interface FileDropzoneProps {
+  projectId: string | null;
   files: UploadedFile[];
   onFilesAdded: (files: UploadedFile[]) => void;
+  onFileUpdate: (id: string, updates: Partial<UploadedFile>) => void;
   onFileRemove: (id: string) => void;
   className?: string;
 }
@@ -28,33 +31,18 @@ function isAcceptedFile(file: File): boolean {
   return (
     ACCEPTED_DRAWING_TYPES.includes(
       file.type as (typeof ACCEPTED_DRAWING_TYPES)[number],
-    ) || ACCEPTED_DRAWING_EXTENSIONS.includes(
+    ) ||
+    ACCEPTED_DRAWING_EXTENSIONS.includes(
       extension as (typeof ACCEPTED_DRAWING_EXTENSIONS)[number],
     )
   );
 }
 
-function mapFileToUploaded(file: File): UploadedFile | null {
-  if (!isAcceptedFile(file)) {
-    return null;
-  }
-
-  if (file.size > MAX_DRAWING_FILE_SIZE_BYTES) {
-    return null;
-  }
-
-  return {
-    id: generateFileId(),
-    name: file.name,
-    size: file.size,
-    type: file.type,
-    status: "ready",
-  };
-}
-
 export function FileDropzone({
+  projectId,
   files,
   onFilesAdded,
+  onFileUpdate,
   onFileRemove,
   className,
 }: FileDropzoneProps) {
@@ -66,13 +54,44 @@ export function FileDropzone({
       return;
     }
 
-    const uploaded = Array.from(fileList)
-      .map(mapFileToUploaded)
-      .filter((file): file is UploadedFile => file !== null);
+    const incoming = Array.from(fileList);
+    const accepted: { file: File; entry: UploadedFile }[] = [];
+    const rejected: string[] = [];
 
-    if (uploaded.length > 0) {
-      onFilesAdded(uploaded);
+    for (const file of incoming) {
+      if (!isAcceptedFile(file)) {
+        rejected.push(`${file.name} (unsupported file type)`);
+        continue;
+      }
+
+      if (file.size > MAX_DRAWING_FILE_SIZE_BYTES) {
+        rejected.push(`${file.name} (exceeds 50 MB)`);
+        continue;
+      }
+
+      accepted.push({
+        file,
+        entry: {
+          id: generateFileId(),
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          status: "ready",
+          file,
+        },
+      });
     }
+
+    if (rejected.length > 0) {
+      toast.error(`Skipped: ${rejected.join(", ")}`);
+    }
+
+    if (accepted.length === 0) {
+      return;
+    }
+
+    // Add files to the UI with "ready" status
+    onFilesAdded(accepted.map((item) => item.entry));
   };
 
   return (

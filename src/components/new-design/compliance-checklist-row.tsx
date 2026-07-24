@@ -5,7 +5,10 @@ interface ComplianceChecklistRowProps {
   item: ComplianceChecklistItem;
 }
 
+
+
 export function ComplianceChecklistRow({ item }: ComplianceChecklistRowProps) {
+  console.log("outrt", item);
   return (
     <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
       <p className="font-body text-sm leading-relaxed text-foreground">

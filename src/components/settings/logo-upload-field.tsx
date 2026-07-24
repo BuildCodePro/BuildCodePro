@@ -1,3 +1,7 @@
+
+
+
+
 "use client";
 
 import { Upload } from "lucide-react";
@@ -9,6 +13,7 @@ import {
   ACCEPTED_LOGO_TYPES,
 } from "@/lib/constants/settings";
 import { cn } from "@/lib/utils/cn";
+import { useUploadAvatarMutation } from "@/services/useProfileService";
 
 interface LogoUploadFieldProps {
   label?: string;
@@ -24,6 +29,7 @@ export function LogoUploadField({
   className,
 }: LogoUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadAvatarMutation = useUploadAvatarMutation();
 
   const handleFile = (fileList: FileList | null) => {
     const file = fileList?.[0];
@@ -38,9 +44,10 @@ export function LogoUploadField({
         extension as (typeof ACCEPTED_LOGO_EXTENSIONS)[number],
       );
 
-    if (isAccepted) {
-      onFileSelect?.(file);
-    }
+    if (!isAccepted) return;
+
+    onFileSelect?.(file);
+    uploadAvatarMutation.mutate(file);
   };
 
   return (
@@ -50,11 +57,20 @@ export function LogoUploadField({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex w-full flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-sky-200 bg-sky-50/40 px-6 py-8 transition-colors hover:border-sky-300 hover:bg-sky-50"
+        disabled={uploadAvatarMutation.isPending}
+        className="flex w-full flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-sky-200 bg-sky-50/40 px-6 py-8 transition-colors hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Upload className="size-5 text-sky-500" aria-hidden="true" />
-        <span className="font-body text-sm text-stat-label">{hint}</span>
+        <span className="font-body text-sm text-stat-label">
+          {uploadAvatarMutation.isPending ? "Uploading..." : hint}
+        </span>
       </button>
+
+      {uploadAvatarMutation.isError && (
+        <p className="text-sm text-red-500">
+          Couldn&apos;t upload logo. Please try again.
+        </p>
+      )}
 
       <input
         ref={inputRef}

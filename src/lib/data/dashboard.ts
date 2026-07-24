@@ -39,8 +39,9 @@ export const recentProjects: DashboardProject[] = [
     id: "1",
     name: "Riverside Mall — Bldg A",
     address: "Austin, TX",
-    occupancyType: "Assembly",
+    occupancyType: "assembly",
     status: "completed",
+    display_status: "completed",
     lastUpdated: "Jun 9, 2025",
   },
   {
@@ -48,7 +49,8 @@ export const recentProjects: DashboardProject[] = [
     name: "Greenfield Office Tower",
     address: "Sacramento, CA",
     occupancyType: "Business",
-    status: "review-needed",
+    status: "review_needed",
+    display_status: "review_needed",
     lastUpdated: "Jun 8, 2025",
   },
   {
@@ -57,6 +59,7 @@ export const recentProjects: DashboardProject[] = [
     address: "Tampa, FL",
     occupancyType: "Residential",
     status: "processing",
+    display_status: "processing",
     lastUpdated: "Jun 7, 2025",
   },
   {
@@ -65,6 +68,7 @@ export const recentProjects: DashboardProject[] = [
     address: "Columbus, OH",
     occupancyType: "Educational",
     status: "draft",
+    display_status: "draft",
     lastUpdated: "Jun 6, 2025",
   },
   {
@@ -73,6 +77,7 @@ export const recentProjects: DashboardProject[] = [
     address: "Newark, NJ",
     occupancyType: "Industrial",
     status: "exported",
+    display_status: "exported",
     lastUpdated: "Jun 5, 2025",
   },
 ];

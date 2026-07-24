@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, Check } from "lucide-react";
+import { AlertCircle, AlertTriangle, Check, HelpCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 import type { ComplianceItemStatus } from "@/types/new-design";
@@ -16,7 +16,7 @@ const statusConfig: Record<
     className: "bg-emerald-50 text-success",
     icon: Check,
   },
-  "review-needed": {
+  "review_needed": {
     label: "Review Needed",
     className: "bg-amber-50 text-warning",
     icon: AlertTriangle,
@@ -25,6 +25,11 @@ const statusConfig: Record<
     label: "Concern",
     className: "bg-red-50 text-primary",
     icon: AlertCircle,
+  },
+  "review-needed": {
+    label: "Review Needed",
+    className: "bg-amber-50 text-warning",
+    icon: AlertTriangle,
   },
 };
 
@@ -37,8 +42,12 @@ export function ComplianceStatusBadge({
   status,
   className,
 }: ComplianceStatusBadgeProps) {
+
+
   const config = statusConfig[status];
   const Icon = config.icon;
+
+
 
   return (
     <span

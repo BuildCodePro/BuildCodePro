@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils/cn";
 interface AnalysisInputsPanelProps {
   rows: AnalysisInputRow[];
   onCancel?: () => void;
+  retryAi?: () => void;
   isCancelling?: boolean;
   className?: string;
 }
@@ -13,6 +14,7 @@ interface AnalysisInputsPanelProps {
 export function AnalysisInputsPanel({
   rows,
   onCancel,
+  retryAi,
   isCancelling = false,
   className,
 }: AnalysisInputsPanelProps) {
@@ -43,19 +45,28 @@ export function AnalysisInputsPanel({
         </CardContent>
       </Card>
 
-      {onCancel ? (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 max-w-none px-6"
-            onClick={onCancel}
-            disabled={isCancelling}
-          >
-            Cancel Analysis
-          </Button>
-        </div>
-      ) : null}
+
+      <div className="flex justify-end flex-col gap-2">
+        <Button
+          type="button"
+          variant="primary"
+          className="h-11 max-w-none px-6 "
+          onClick={retryAi}
+          disabled={isCancelling}
+        >
+          Retry Analysis
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 max-w-none px-6"
+          onClick={onCancel}
+          disabled={isCancelling}
+        >
+          Cancel Analysis
+        </Button>
+      </div>
+
     </div>
   );
 }

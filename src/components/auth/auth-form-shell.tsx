@@ -17,7 +17,7 @@ export function AuthFormShell({
     <div
       className={cn(
         "flex w-full flex-col items-center",
-        size === "narrow" ? "max-w-[380px]" : "max-w-[552px]",
+        size === "narrow" ? "max-w-[500px]" : "max-w-[552px]",
         className,
       )}
     >
