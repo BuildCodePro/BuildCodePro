@@ -31,6 +31,7 @@ import type {
   EngineerReviewStatus,
   PermitChecklistItem,
 } from "@/types/engineer";
+import { useRouter } from "next/navigation";
 
 const statusStyles: Record<EngineerReviewStatus, string> = {
   "pending-review": "bg-amber-50 text-amber-700",
@@ -94,6 +95,7 @@ export function EngineerReviewPanel({
   const updateNotesMutation = useUpdateEngineerNotesMutation(projectId);
   const updateChecklistMutation = useUpdatePermitChecklistMutation(projectId);
   const markPermitReadyMutation = useMarkProjectPermitReadyMutation(projectId);
+  const router = useRouter();
 
   useEffect(() => {
     if (!reviewQuery.data) return;
@@ -106,7 +108,7 @@ export function EngineerReviewPanel({
 
   const handleChecklistToggle = (id: string, checked: boolean) => {
     const nextChecklist = checklist.map((item) =>
-        item.id === id ? { ...item, completed: checked } : item,
+      item.id === id ? { ...item, completed: checked } : item,
     );
     setChecklist(nextChecklist);
 
@@ -141,15 +143,46 @@ export function EngineerReviewPanel({
     );
   };
 
+  // FIX: reads the live textarea value at click-time (not a possibly-stale
+  // closure) and, if it differs from what's already saved, persists it
+  // first — so Approve/Request Changes always submits the exact notes
+  // the user currently sees, regardless of blur timing/race conditions.
+  const getConfirmedNotes = async (): Promise<string> => {
+    const currentNotes = notes;
+
+    if (currentNotes === review.engineerNotes) {
+      return currentNotes;
+    }
+
+    try {
+      const data = await updateNotesMutation.mutateAsync({ notes: currentNotes });
+      const apiReview = mapApiReviewToRecord(data);
+      setReview(apiReview);
+      setNotes(apiReview.engineerNotes);
+      setChecklist(apiReview.permitChecklist);
+      return apiReview.engineerNotes;
+    } catch {
+      // If saving the notes separately fails, still fall back to sending
+      // whatever the user typed along with the decision itself, rather
+      // than silently dropping it.
+      return currentNotes;
+    }
+  };
+
   const handleApprove = async () => {
     setIsSubmitting(true);
     try {
-      const data = await submitDecisionMutation.mutateAsync({ action: "approve", notes });
+      const confirmedNotes = await getConfirmedNotes();
+      const data = await submitDecisionMutation.mutateAsync({
+        action: "approve",
+        notes: confirmedNotes,
+      });
       const apiReview = mapApiReviewToRecord(data);
       setReview(apiReview);
       setNotes(apiReview.engineerNotes);
       setChecklist(apiReview.permitChecklist);
       toast.success("Design approved successfully.");
+      router.push("/engineer/projects")
     } catch {
       toast.error("Failed to approve design.");
     } finally {
@@ -160,12 +193,17 @@ export function EngineerReviewPanel({
   const handleRequestChanges = async () => {
     setIsSubmitting(true);
     try {
-      const data = await submitDecisionMutation.mutateAsync({ action: "request_changes", notes });
+      const confirmedNotes = await getConfirmedNotes();
+      const data = await submitDecisionMutation.mutateAsync({
+        action: "request_changes",
+        notes: confirmedNotes,
+      });
       const apiReview = mapApiReviewToRecord(data);
       setReview(apiReview);
       setNotes(apiReview.engineerNotes);
       setChecklist(apiReview.permitChecklist);
       toast.success("Changes requested successfully.");
+      router.push("/engineer/projects")
     } catch {
       toast.error("Failed to request changes.");
     } finally {
@@ -196,7 +234,7 @@ export function EngineerReviewPanel({
     <div className={cn("space-y-6", className)}>
       <Card>
         <CardContent className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4">
             <div className="space-y-1">
               <p className="font-body text-sm font-medium text-stat-label">
                 Engineer Review Status
@@ -216,27 +254,7 @@ export function EngineerReviewPanel({
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isBusy || !reviewQuery.data?.can_request_changes}
-                onClick={handleRequestChanges}
-                className="gap-2"
-              >
-                <RotateCcw className="size-4" />
-                Request Changes
-              </Button>
-              <Button
-                type="button"
-                disabled={isBusy || !reviewQuery.data?.can_approve}
-                onClick={handleApprove}
-                className="gap-2"
-              >
-                <CheckCircle2 className="size-4" />
-                Approve Design
-              </Button>
-            </div>
+
           </div>
 
           <div className="mt-6 space-y-2">
@@ -249,6 +267,29 @@ export function EngineerReviewPanel({
               onChange={(event) => setNotes(event.target.value)}
               onBlur={handleNotesBlur}
             />
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size={"sm"}
+              disabled={isBusy || !reviewQuery.data?.can_request_changes}
+              onClick={handleRequestChanges}
+              className="gap-2 sm:max-w-[200px]"
+            >
+              <RotateCcw className="size-4" />
+              Request Changes
+            </Button>
+            <Button
+              type="button"
+              size={"sm"}
+              disabled={isBusy || !reviewQuery.data?.can_approve}
+              onClick={handleApprove}
+              className="gap-2 sm:max-w-[200px]"
+            >
+              <CheckCircle2 className="size-4" />
+              Approve Design
+            </Button>
           </div>
         </CardContent>
       </Card>

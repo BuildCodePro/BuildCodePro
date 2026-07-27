@@ -120,6 +120,8 @@ import type { PlatformUser } from "@/types/super-admin";
 import { cn } from "@/lib/utils/cn";
 
 import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { TableEmptyState } from "../ui/emptyState";
+import { Users } from "lucide-react";
 
 interface UsersTableProps {
   users: PlatformUser[];
@@ -163,7 +165,7 @@ export function UsersTable({
                 colSpan={6}
                 className="text-center text-sm text-stat-label"
               >
-                No users found.
+                <TableEmptyState title="Users Not Found" icon={<Users className="w-8 h-8" />} />
               </TableCell>
             </TableRow>
           ) : (

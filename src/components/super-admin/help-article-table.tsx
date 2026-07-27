@@ -17,6 +17,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { useDeleteHelpArticleMutation } from "@/services/adminSupportService";
 import type { HelpArticleItem } from "@/services/adminSupportService";
 import { cn } from "@/lib/utils/cn";
+import { TableEmptyState } from "../ui/emptyState";
 
 const CATEGORY_LABELS: Record<HelpArticleItem["category"], string> = {
   getting_started: "Getting Started",
@@ -92,7 +93,7 @@ export function HelpArticlesTable({
                 colSpan={6}
                 className="text-center text-sm text-stat-label"
               >
-                No articles found.
+                <TableEmptyState title="No Articles Found" />
               </TableCell>
             </TableRow>
           ) : (

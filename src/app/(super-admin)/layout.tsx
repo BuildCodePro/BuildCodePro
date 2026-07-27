@@ -9,8 +9,8 @@ export default function SuperAdminGroupLayout({
   children,
 }: SuperAdminGroupLayoutProps) {
   return (
-    // <RoleAuthGuard allowedRoles={["super_admin"]}>
+    <RoleAuthGuard allowedRoles={["super_admin"]}>
       <SuperAdminShell>{children}</SuperAdminShell>
-    // </RoleAuthGuard>
+    </RoleAuthGuard>
   );
 }

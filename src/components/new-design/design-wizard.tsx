@@ -3,14 +3,22 @@
 import { useMemo, useState, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { useCreateProjectMutation } from "@/services/projectService";
+import {
+  useCreateProjectMutation,
+  useGetProjectQuery,
+} from "@/services/projectService";
 import { useUploadDrawingMutation } from "@/services/drawingService";
 import { useStartAnalysisMutation } from "@/services/analysisService";
+
+import { AlertBanner } from "@/components/ui/alert-banner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 import {
   DESIGN_WIZARD_STEPS,
   INITIAL_CHECKLIST_ITEMS,
 } from "@/lib/constants/new-design";
+import { OCCUPANCY_TYPES } from "@/lib/constants/project-info";
 import {
   getProjectInfoChecklistState,
 } from "@/lib/validations/project-info";
@@ -50,6 +58,41 @@ const REQUIRED_PROJECT_INFO_FIELDS: {
     { key: "occupancyType", message: "Occupancy type is required" },
   ];
 
+// Shape of a structured API error payload, e.g.:
+// { error_code: "DESIGN_QUOTA_EXCEEDED", message: "...", used: 14, limit: 5 }
+interface ApiErrorPayload {
+  error_code?: string;
+  message?: string;
+  used?: number;
+  limit?: number;
+  timestamp?: string;
+}
+
+// Errors can arrive in different shapes depending on the client/fetch
+// wrapper (error.data, error.response.data, or the error itself already
+// being the parsed payload). This normalizes all of them.
+function extractApiErrorPayload(error: any): ApiErrorPayload | null {
+  if (!error) return null;
+
+  const candidate =
+    error?.data ??
+    error?.response?.data ??
+    (typeof error === "object" ? error : null);
+
+  if (candidate && typeof candidate === "object" && "error_code" in candidate) {
+    return candidate as ApiErrorPayload;
+  }
+
+  return null;
+}
+
+function getErrorMessage(error: any, fallback: string): string {
+  const payload = extractApiErrorPayload(error);
+  if (payload?.message) return payload.message;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 function validateProjectInfo(
   info: ProjectInfoFormData,
 ): Partial<Record<keyof ProjectInfoFormData, string>> {
@@ -65,11 +108,47 @@ function validateProjectInfo(
   return errors;
 }
 
+// Matches the API's occupancy_type (e.g. "mercantile") to the exact label
+// used in OCCUPANCY_TYPES (e.g. "Mercantile"), case-insensitively.
+function mapOccupancyType(value?: string | null): string {
+  if (!value) return "";
+  const match = OCCUPANCY_TYPES.find(
+    (type) => type.toLowerCase() === value.toLowerCase(),
+  );
+  return match ?? value;
+}
+
+// Maps a single-project API response into the wizard's form shape.
+function mapProjectResponseToFormData(project: any): ProjectInfoFormData {
+  return {
+    projectName: project?.name ?? "",
+    address: project?.address ?? "",
+    jurisdiction: project?.jurisdiction ?? "",
+    squareFootage:
+      project?.square_footage != null ? String(project.square_footage) : "",
+    numberOfFloors:
+      project?.number_of_floors != null
+        ? String(project.number_of_floors)
+        : "",
+    occupancyType: mapOccupancyType(project?.occupancy_type),
+    optionalSystems: {
+      sprinkler: Boolean(project?.sprinkler_system),
+      elevator: Boolean(project?.elevator),
+      ductDetectors: Boolean(project?.duct_detectors),
+      voiceEvacuation: Boolean(project?.voice_evacuation),
+    },
+    specialNotes: project?.special_notes ?? "",
+  };
+}
+
 export function DesignWizard() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const stepParam = searchParams.get("step") as DesignWizardStep | null;
+
+  const resumeProjectIdParam = searchParams.get("projectId");
+
   const initialStep = stepParam && DESIGN_WIZARD_STEPS.some((s) => s.id === stepParam)
     ? stepParam
     : "project-info";
@@ -89,44 +168,93 @@ export function DesignWizard() {
     router.push(`${pathname}?${params.toString()}`);
   };
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [projectInfo, setProjectInfo] = useState<ProjectInfoFormData>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("buildcodepro_wizard_projectInfo");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error("Failed to parse saved projectInfo", e);
-        }
-      }
-    }
-    return DEFAULT_PROJECT_INFO;
-  });
-  const [projectInfoErrors, setProjectInfoErrors] = useState<
-    Partial<Record<keyof ProjectInfoFormData, string>>
+
+  // Always start with defaults on both server & client render (avoids
+  // hydration mismatch), then hydrate from localStorage / the resume API
+  // explicitly on mount.
+  const [projectInfo, setProjectInfo] = useState<ProjectInfoFormData>(
+    DEFAULT_PROJECT_INFO,
+  );
+  const [isProjectInfoHydrated, setIsProjectInfoHydrated] = useState(false);
+
+  const [projectInfoErrors, setProjectInfoErrors] = useState<Partial<Record<keyof ProjectInfoFormData, string>>
   >({});
-  const [projectId, setProjectId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("buildcodepro_wizard_projectId");
-    }
-    return null;
-  });
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+
+  // Quota / plan-limit style blocking errors (e.g. DESIGN_QUOTA_EXCEEDED)
+  // render a full-page fallback instead of the wizard form.
+  const [quotaError, setQuotaError] = useState<ApiErrorPayload | null>(null);
+
+  const {
+    data: resumeProjectData,
+    isLoading: isResumeProjectLoading,
+    isError: isResumeProjectError,
+  } = useGetProjectQuery(resumeProjectIdParam ?? "");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (!resumeProjectIdParam) return;
+
+    if (isResumeProjectError) {
+      toast.error("Couldn't load that project. Please try again.");
+      return;
+    }
+
+    const project = (resumeProjectData as any)?.data ?? resumeProjectData;
+    if (!project) return;
+
+    setProjectInfo(mapProjectResponseToFormData(project));
+    setProjectId(project.id ?? resumeProjectIdParam);
+    setProjectInfoErrors({});
+    setIsProjectInfoHydrated(true);
+  }, [resumeProjectIdParam, resumeProjectData, isResumeProjectError]);
+
+  // Hydrate projectInfo + projectId from localStorage once, on mount —
+  // but only when we're NOT resuming a specific project via ?projectId=,
+  // since the API data above should win in that case.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (resumeProjectIdParam) return; // resume flow handles hydration itself
+
+    try {
+      const savedInfo = localStorage.getItem("buildcodepro_wizard_projectInfo");
+      if (savedInfo) {
+        const parsed = JSON.parse(savedInfo);
+        setProjectInfo((prev) => ({
+          ...DEFAULT_PROJECT_INFO,
+          ...prev,
+          ...parsed,
+          optionalSystems: {
+            ...DEFAULT_PROJECT_INFO.optionalSystems,
+            ...(parsed?.optionalSystems ?? {}),
+          },
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to parse saved projectInfo", e);
+    }
+
+    const savedProjectId = localStorage.getItem("buildcodepro_wizard_projectId");
+    if (savedProjectId) {
+      setProjectId(savedProjectId);
+    }
+
+    setIsProjectInfoHydrated(true);
+  }, [resumeProjectIdParam]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && isProjectInfoHydrated) {
       localStorage.setItem("buildcodepro_wizard_projectInfo", JSON.stringify(projectInfo));
     }
-  }, [projectInfo]);
+  }, [projectInfo, isProjectInfoHydrated]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && projectId) {
       localStorage.setItem("buildcodepro_wizard_projectId", projectId);
     }
   }, [projectId]);
-
-  console.log(" desiegn projectId", projectId);
 
   const projectChecklist = useMemo(
     () => getProjectInfoChecklistState(projectInfo),
@@ -164,7 +292,7 @@ export function DesignWizard() {
 
   const handleProjectInfoChange = (newData: ProjectInfoFormData) => {
     setProjectInfo(newData);
-    setProjectInfoErrors((prev) => {
+    setProjectInfoErrors((prev: any) => {
       if (Object.keys(prev).length === 0) return prev;
 
       const updated = { ...prev };
@@ -203,6 +331,63 @@ export function DesignWizard() {
   const uploadDrawingMutation = useUploadDrawingMutation();
   const startAnalysisMutation = useStartAnalysisMutation();
 
+  // Shared payload builder so Continue and Save Draft always send the same
+  // project data — only the `status` field differs.
+  const buildProjectPayload = (status: "draft" | "active") => ({
+    name: projectInfo.projectName,
+    address: projectInfo.address,
+    jurisdiction: projectInfo.jurisdiction,
+    square_footage: parseInt(projectInfo.squareFootage) || 0,
+    number_of_floors: parseInt(projectInfo.numberOfFloors) || 1,
+    occupancy_type: projectInfo.occupancyType.toLowerCase(),
+    sprinkler_system: projectInfo.optionalSystems.sprinkler,
+    elevator: projectInfo.optionalSystems.elevator,
+    duct_detectors: projectInfo.optionalSystems.ductDetectors,
+    voice_evacuation: projectInfo.optionalSystems.voiceEvacuation,
+    special_notes: projectInfo.specialNotes,
+    status,
+  });
+
+  // Central handler: if this is a DESIGN_QUOTA_EXCEEDED (or similar
+  // blocking) error, switch to the fallback screen instead of just
+  // toasting. Returns true if it was handled as a quota error.
+  const handleQuotaAwareError = (error: any, fallbackMessage: string): boolean => {
+    const payload = extractApiErrorPayload(error);
+
+    if (payload?.error_code === "DESIGN_QUOTA_EXCEEDED") {
+      setQuotaError(payload);
+      toast.error(payload.message ?? fallbackMessage);
+      return true;
+    }
+
+    toast.error(getErrorMessage(error, fallbackMessage));
+    return false;
+  };
+
+  // Save Draft: only saves + redirects to the projects list.
+  // It intentionally does NOT touch `currentStep` / call updateStepInUrl.
+  const handleSaveDraft = async () => {
+    if (isSavingDraft) return; // prevent double submits
+
+    setIsSavingDraft(true);
+    try {
+      const response = await createProjectMutation.mutateAsync(
+        buildProjectPayload("draft"),
+      );
+
+      setProjectId(response?.id ?? response?.data?.id ?? null);
+      toast.success("Draft saved successfully!");
+
+      // Navigate away to the projects list after saving.
+      router.push("/company/projects");
+    } catch (error) {
+      console.error("Failed to save draft:", error);
+      handleQuotaAwareError(error, "Failed to save draft. Please try again.");
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
   const handleContinue = async () => {
     if (currentStep === "project-info") {
       const validationErrors = validateProjectInfo(projectInfo);
@@ -216,25 +401,15 @@ export function DesignWizard() {
       setProjectInfoErrors({});
 
       try {
-        const response = await createProjectMutation.mutateAsync({
-          name: projectInfo.projectName,
-          address: projectInfo.address,
-          jurisdiction: projectInfo.jurisdiction,
-          square_footage: parseInt(projectInfo.squareFootage) || 0,
-          number_of_floors: parseInt(projectInfo.numberOfFloors) || 1,
-          occupancy_type: projectInfo.occupancyType.toLowerCase(),
-          sprinkler_system: projectInfo.optionalSystems.sprinkler,
-          elevator: projectInfo.optionalSystems.elevator,
-          duct_detectors: projectInfo.optionalSystems.ductDetectors,
-          voice_evacuation: projectInfo.optionalSystems.voiceEvacuation,
-          special_notes: projectInfo.specialNotes,
-        });
+        const response = await createProjectMutation.mutateAsync(
+          buildProjectPayload("active"),
+        );
 
         setProjectId(response?.id ?? response?.data?.id ?? null);
         toast.success("Project created successfully!");
       } catch (error) {
         console.error("Failed to create project:", error);
-        toast.error("Failed to create project. Please try again.");
+        handleQuotaAwareError(error, "Failed to create project. Please try again.");
         return;
       }
     }
@@ -252,6 +427,7 @@ export function DesignWizard() {
       if (filesToUpload.length > 0) {
         setIsUploading(true);
         let hasError = false;
+        let hasQuotaError = false;
 
         setFiles((prev) =>
           prev.map((f) =>
@@ -263,38 +439,40 @@ export function DesignWizard() {
 
         for (const fileObj of filesToUpload) {
           try {
-            console.log(
-              "Uploading drawing:",
-              fileObj.name,
-              "for project:",
-              projectId
-            );
             const response = await uploadDrawingMutation.mutateAsync({
               projectId,
               file: fileObj.file!,
             });
-            console.log("Upload success:", response);
             toast.success(`Uploaded ${fileObj.name} successfully!`);
             handleFileUpdate(fileObj.id, {
               status: "uploaded",
               drawingId: response?.data?.id,
             });
-          } catch (error : any) {
+          } catch (error: any) {
             console.error("Upload failed:", error);
-            const message =
-              error instanceof Error
-                ? error.message
-                : error.data.message;
+            const message = getErrorMessage(error, "Upload failed.");
             handleFileUpdate(fileObj.id, {
               status: "error",
               errorMessage: message,
             });
-            toast.error(`Failed to upload ${fileObj.name}: ${message}`);
+
+            const wasQuota = handleQuotaAwareError(
+              error,
+              `Failed to upload ${fileObj.name}: ${message}`,
+            );
+
             hasError = true;
+            if (wasQuota) {
+              hasQuotaError = true;
+              break; // stop uploading remaining files, quota is exhausted
+            }
           }
         }
 
         setIsUploading(false);
+        if (hasQuotaError) {
+          return; // fallback screen will render; don't proceed to next step
+        }
         if (hasError) {
           return;
         }
@@ -306,13 +484,11 @@ export function DesignWizard() {
         return;
       }
       try {
-        console.log("[Design Wizard] Starting analysis for project:", projectId);
         const analysisResponse = await startAnalysisMutation.mutateAsync(projectId);
-        console.log("[Design Wizard] Analysis started:", analysisResponse);
         setJobId(analysisResponse.job_id);
       } catch (error) {
         console.error("[Design Wizard] Failed to start analysis:", error);
-        toast.error("Failed to start AI analysis. Please try again.");
+        handleQuotaAwareError(error, "Failed to start AI analysis. Please try again.");
         return;
       }
     }
@@ -332,7 +508,8 @@ export function DesignWizard() {
       (files.length === 0 ||
         files.some((f) => f.status === "uploading") ||
         isUploading)) ||
-    (currentStep === "project-info" && createProjectMutation.isPending);
+    (currentStep === "project-info" && createProjectMutation.isPending) ||
+    (Boolean(resumeProjectIdParam) && isResumeProjectLoading);
 
   const showBackButton = currentStep !== "project-info";
 
@@ -341,6 +518,69 @@ export function DesignWizard() {
     continueLabel = "Creating...";
   } else if (isUploading && currentStep === "upload") {
     continueLabel = "Uploading...";
+  }
+
+  // --- Blocking fallback: monthly design/quota limit reached ---
+  if (quotaError) {
+    return (
+      <div className="flex w-full flex-col gap-6">
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-red-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="size-6 text-red-600"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                />
+              </svg>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-body text-base font-semibold text-foreground">
+                Monthly design limit reached
+              </h3>
+              <p className="mx-auto max-w-md font-body text-sm text-stat-label">
+                {quotaError.message ??
+                  "You've reached your monthly design limit."}
+              </p>
+              {quotaError.used != null && quotaError.limit != null ? (
+                <p className="font-body text-xs text-stat-label">
+                  {quotaError.used} of {quotaError.limit} designs used this
+                  month
+                </p>
+              ) : null}
+            </div>
+
+            <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 max-w-none px-6"
+                onClick={() => router.push("/company/projects")}
+              >
+                Back to Projects
+              </Button>
+              <Button
+                type="button"
+                className="h-11 max-w-none px-6"
+                onClick={() => router.push("/company/billing")}
+              >
+                Upgrade Plan
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -387,10 +627,11 @@ export function DesignWizard() {
 
       {currentStep !== "ai-analysis" && currentStep !== "results" ? (
         <WizardFooter
-          onSaveDraft={() => undefined}
+          onSaveDraft={handleSaveDraft}
           onContinue={handleContinue}
           continueLabel={continueLabel}
           isContinueDisabled={isContinueDisabled}
+          isSavingDraft={isSavingDraft}
         />
       ) : null}
     </div>

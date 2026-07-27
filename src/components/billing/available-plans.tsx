@@ -1,34 +1,6 @@
-// import { BILLING_PLANS } from "@/lib/constants/billing";
-// import type { BillingPlan } from "@/lib/constants/billing";
-
-// import { PlanCard } from "./plan-card";
-
-// interface AvailablePlansProps {
-//   plans?: BillingPlan[];
-//   onSwitch?: (planId: string) => void;
-// }
-
-// export function AvailablePlans({
-//   plans = BILLING_PLANS,
-//   onSwitch,
-// }: AvailablePlansProps) {
-//   return (
-//     <section className="space-y-4">
-//       <h2 className="text-section-title font-body">Available Plans</h2>
-
-//       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-//         {plans.map((plan) => (
-//           <PlanCard key={plan.id} plan={plan} onSwitch={onSwitch} />
-//         ))}
-//       </div>
-//     </section>
-//   );
-// }
-
-
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useCheckoutMutation, usePlansQuery } from "@/services/billingService";
 import type { Plan } from "@/services/billingService";
@@ -66,8 +38,9 @@ function mapToBillingPlan(plan: Plan, currentPlanCode?: string): BillingPlan {
     designsPerMonth:
       plan.monthly_design_limit === 0 ? "Unlimited" : plan.monthly_design_limit,
     features: mapPlanFeatures(plan),
-    isCurrentPlan: plan.code === currentPlanCode,
-    isPopular: false,
+    // Bug fix: PlanCard reads `plan.isCurrent`, not `isCurrentPlan` —
+    // this mismatch meant the "Current Plan" state never showed.
+    isCurrent: plan.code === currentPlanCode,
   } as BillingPlan;
 }
 
@@ -78,9 +51,13 @@ export function AvailablePlans({
   const plansQuery = usePlansQuery();
   const checkoutMutation = useCheckoutMutation();
 
+  // Track which specific plan is being switched to, so only that
+  // plan's button shows the loading state — not all of them.
+  const [pendingPlanCode, setPendingPlanCode] = useState<string | null>(null);
+
   const plans = useMemo(() => {
     const items = plansQuery.data?.items ?? [];
-    return items.map((plan : any) => mapToBillingPlan(plan, currentPlanCode));
+    return items.map((plan: any) => mapToBillingPlan(plan, currentPlanCode));
   }, [plansQuery.data, currentPlanCode]);
 
   const handleSwitch = (planCode: string) => {
@@ -89,11 +66,19 @@ export function AvailablePlans({
       return;
     }
 
+    setPendingPlanCode(planCode);
+
     checkoutMutation.mutate(
       { plan_code: planCode },
       {
-        onSuccess: (data : any) => {
+        onSuccess: (data: any) => {
           window.location.href = data.checkout_url;
+          // Intentionally not clearing pendingPlanCode here — we're
+          // navigating away, so the button should stay disabled/loading
+          // until the redirect actually happens.
+        },
+        onError: () => {
+          setPendingPlanCode(null);
         },
       },
     );
@@ -114,11 +99,15 @@ export function AvailablePlans({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {plans.map((plan : any) => (
+          {plans.map((plan: any) => (
             <PlanCard
               key={plan.id}
               plan={plan}
               onSwitch={handleSwitch}
+              isSwitching={pendingPlanCode === plan.id}
+              disableSwitch={
+                checkoutMutation.isPending && pendingPlanCode !== plan.id
+              }
             />
           ))}
         </div>

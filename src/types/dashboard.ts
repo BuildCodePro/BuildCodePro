@@ -4,6 +4,8 @@ export type ProjectStatus =
   | "processing"
   | "draft"
   | "exported"
+  | "ai_complete"
+  | "approved"
   | "ready";
 
 export interface DashboardStat {
@@ -24,6 +26,7 @@ export interface DashboardProject {
   occupancyType: string;
   status: ProjectStatus;
   display_status: ProjectStatus;
+  workflow_status: ProjectStatus;
   lastUpdated: string;
   createdAt?: string;
   imageUrl?: string;

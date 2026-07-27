@@ -8,6 +8,7 @@ interface WizardFooterProps {
   onContinue?: () => void;
   continueLabel?: string;
   isContinueDisabled?: boolean;
+  isSavingDraft?: boolean;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export function WizardFooter({
   onContinue,
   continueLabel = "Continue",
   isContinueDisabled = false,
+  isSavingDraft = false,
   className,
 }: WizardFooterProps) {
   return (
@@ -29,14 +31,25 @@ export function WizardFooter({
         type="button"
         variant="outline"
         className="h-11 max-w-none px-6"
-        onClick={onSaveDraft}
+        disabled={isSavingDraft}
+        onClick={(event) => {
+          // Guard against any accidental form submission / bubbling that
+          // could trigger step navigation elsewhere in the tree.
+          event.preventDefault();
+          event.stopPropagation();
+          onSaveDraft?.();
+        }}
       >
-        Save Draft
+        {isSavingDraft ? "Saving..." : "Save Draft"}
       </Button>
       <button
         type="button"
         disabled={isContinueDisabled}
-        onClick={onContinue}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onContinue?.();
+        }}
         className={cn(
           buttonVariants({ variant: "primary" }),
           "h-11 max-w-none gap-2 px-6",

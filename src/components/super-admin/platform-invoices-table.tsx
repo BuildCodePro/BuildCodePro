@@ -82,7 +82,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileTerminal, Loader2 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { InvoiceStatusBadge } from "@/components/ui/invoice-status-badge";
@@ -99,6 +99,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "@/services/api/endpoints";
 import type { PlatformInvoice } from "@/types/super-admin";
 import { cn } from "@/lib/utils/cn";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface PlatformInvoicesTableProps {
   invoices: PlatformInvoice[];
@@ -174,7 +175,7 @@ export function PlatformInvoicesTable({
                   colSpan={7}
                   className="text-center text-sm text-stat-label"
                 >
-                  No invoices found.
+                  <TableEmptyState title="No invoices found." icon={<FileTerminal className="w-8 h-8" />} />
                 </TableCell>
               </TableRow>
             ) : (

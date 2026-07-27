@@ -42,6 +42,7 @@ export const recentProjects: DashboardProject[] = [
     occupancyType: "assembly",
     status: "completed",
     display_status: "completed",
+    workflow_status: "completed",
     lastUpdated: "Jun 9, 2025",
   },
   {
@@ -51,6 +52,7 @@ export const recentProjects: DashboardProject[] = [
     occupancyType: "Business",
     status: "review_needed",
     display_status: "review_needed",
+    workflow_status: "review_needed",
     lastUpdated: "Jun 8, 2025",
   },
   {
@@ -60,6 +62,7 @@ export const recentProjects: DashboardProject[] = [
     occupancyType: "Residential",
     status: "processing",
     display_status: "processing",
+    workflow_status: "processing",
     lastUpdated: "Jun 7, 2025",
   },
   {
@@ -69,6 +72,7 @@ export const recentProjects: DashboardProject[] = [
     occupancyType: "Educational",
     status: "draft",
     display_status: "draft",
+    workflow_status: "draft",
     lastUpdated: "Jun 6, 2025",
   },
   {
@@ -78,6 +82,7 @@ export const recentProjects: DashboardProject[] = [
     occupancyType: "Industrial",
     status: "exported",
     display_status: "exported",
+    workflow_status: "draft",
     lastUpdated: "Jun 5, 2025",
   },
 ];

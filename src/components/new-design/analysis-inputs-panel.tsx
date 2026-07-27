@@ -7,6 +7,12 @@ interface AnalysisInputsPanelProps {
   rows: AnalysisInputRow[];
   onCancel?: () => void;
   retryAi?: () => void;
+  // Whether each action is currently allowed given the analysis job's
+  // lifecycle state (running / completed / failed / cancelled).
+  canRetry?: boolean;
+  canCancel?: boolean;
+  // Whether each action's mutation is currently in flight.
+  isRetrying?: boolean;
   isCancelling?: boolean;
   className?: string;
 }
@@ -15,6 +21,9 @@ export function AnalysisInputsPanel({
   rows,
   onCancel,
   retryAi,
+  canRetry = false,
+  canCancel = false,
+  isRetrying = false,
   isCancelling = false,
   className,
 }: AnalysisInputsPanelProps) {
@@ -52,18 +61,18 @@ export function AnalysisInputsPanel({
           variant="primary"
           className="h-11 max-w-none px-6 "
           onClick={retryAi}
-          disabled={isCancelling}
+          disabled={!canRetry || isRetrying}
         >
-          Retry Analysis
+          {isRetrying ? "Retrying..." : "Retry Analysis"}
         </Button>
         <Button
           type="button"
           variant="outline"
           className="h-11 max-w-none px-6"
           onClick={onCancel}
-          disabled={isCancelling}
+          disabled={!canCancel || isCancelling}
         >
-          Cancel Analysis
+          {isCancelling ? "Cancelling..." : "Cancel Analysis"}
         </Button>
       </div>
 

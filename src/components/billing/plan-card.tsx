@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 import type { BillingPlan } from "@/lib/constants/billing";
@@ -6,6 +6,8 @@ import type { BillingPlan } from "@/lib/constants/billing";
 interface PlanCardProps {
   plan: BillingPlan;
   onSwitch?: (planId: string) => void;
+  isSwitching?: boolean;
+  disableSwitch?: boolean;
   className?: string;
 }
 
@@ -14,14 +16,18 @@ function formatDesigns(value: BillingPlan["designsPerMonth"]): string {
   return `${value} designs / month`;
 }
 
-export function PlanCard({ plan, onSwitch, className }: PlanCardProps) {
+export function PlanCard({
+  plan,
+  onSwitch,
+  isSwitching = false,
+  disableSwitch = false,
+  className,
+}: PlanCardProps) {
   return (
     <article
       className={cn(
         "flex flex-col rounded-[16px] border bg-white px-6 py-6",
-        plan.isCurrent
-          ? "border-primary shadow-sm"
-          : "border-border",
+        plan.isCurrent ? "border-primary shadow-sm" : "border-border",
         className,
       )}
     >
@@ -73,9 +79,20 @@ export function PlanCard({ plan, onSwitch, className }: PlanCardProps) {
           <button
             type="button"
             onClick={() => onSwitch?.(plan.id)}
-            className="h-11 w-full rounded-[10px] bg-primary font-body text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            disabled={isSwitching || disableSwitch}
+            className={cn(
+              "flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-primary font-body text-sm font-semibold text-white transition-colors hover:bg-primary-hover",
+              "disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-primary",
+            )}
           >
-            Switch Plan
+            {isSwitching ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                Switching...
+              </>
+            ) : (
+              "Switch Plan"
+            )}
           </button>
         )}
       </div>

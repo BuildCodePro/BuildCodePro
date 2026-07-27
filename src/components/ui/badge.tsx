@@ -10,6 +10,8 @@ const badgeVariants = cva(
       variant: {
         completed: "bg-emerald-50 text-emerald-700",
         exported: "bg-emerald-50 text-emerald-700",
+        approved: "bg-blue-50 text-blue-700",
+        ai_complete: "bg-emerald-50 text-emerald-700",
         "review_needed": "bg-amber-50 text-amber-700",
         processing: "bg-sky-50 text-sky-700",
         draft: "bg-slate-100 text-slate-600",
@@ -28,6 +30,8 @@ const statusLabels: Record<ProjectStatus, string> = {
   processing: "Processing",
   draft: "Draft",
   exported: "Exported",
+  ai_complete: "AI Complete",
+  approved: "Approved",
   ready: "Ready",
 };
 

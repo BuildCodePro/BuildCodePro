@@ -81,6 +81,7 @@ function mapProjectToDashboardProject(project: ProjectDto): DashboardProject {
     occupancyType: project.occupancy_type || "—",
     status: project.status as DashboardProject["status"],
     display_status: project.display_status,
+    workflow_status: project.workflow_status,
     lastUpdated: project.updated_at,
     createdAt: project.created_at,
   };
@@ -104,7 +105,7 @@ function mapProjectToReviewQueueItem(project: ProjectDto): ReviewQueueItem {
     submittedAt: project.created_at,
     complianceScore: 0,
     reviewFlags: 0,
-    reviewStatus: normalizeEngineerReviewStatus(project.engineer_review_status ?? project.display_status ?? project.status),
+    reviewStatus: normalizeEngineerReviewStatus(project.engineer_review_status ?? project.display_status ?? project.status ?? project.workflow_status),
   };
 }
 
@@ -163,10 +164,10 @@ export function EstimatorDashboardContent() {
   );
   const usage = statsQuery.data?.monthly_design_usage
     ? {
-        used: statsQuery.data.monthly_design_usage.used,
-        total: statsQuery.data.monthly_design_usage.limit,
-        planName: statsQuery.data.monthly_design_usage.plan_name,
-      }
+      used: statsQuery.data.monthly_design_usage.used,
+      total: statsQuery.data.monthly_design_usage.limit,
+      planName: statsQuery.data.monthly_design_usage.plan_name,
+    }
     : { used: 0, total: 0, planName: "—" };
 
   return (

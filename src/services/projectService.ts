@@ -40,9 +40,12 @@ export interface ProjectDto {
   special_notes: string;
   status: string;
   display_status: ProjectStatus;
+  workflow_status: ProjectStatus;
   engineer_review_status?: string;
   created_at: string;
   updated_at: string;
+  engineer_notes: string;
+  engineer_reviewed_at: string;
 }
 
 export interface PaginatedProjectsResponse {
@@ -61,6 +64,12 @@ export interface GetProjectsParams {
   jurisdiction_state?: string;
 }
 
+export interface SendForReviewResponse {
+  id: string;
+  workflow_status: 'under_review';
+  message?: string;
+}
+
 export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardProject {
   return {
     id: project.id,
@@ -69,6 +78,7 @@ export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardP
     occupancyType: project.occupancy_type || "—",
     status: project.status as ProjectStatus,
     display_status: project.display_status,
+    workflow_status: project.workflow_status,
     lastUpdated: project.updated_at,
     createdAt: project.created_at,
   };
@@ -124,6 +134,18 @@ const getProjectByIdApi = async (id: string): Promise<ProjectDto> => {
   });
 };
 
+const sendForReviewApi = async (
+  projectId: string,
+): Promise<SendForReviewResponse> => {
+  return apiRequest<SendForReviewResponse>(
+    API_ENDPOINTS.PROJECTS.SEND_FOR_REVIEW(projectId),
+    {
+      method: 'POST',
+    },
+  );
+};
+
+
 // --- TanStack Query Hooks ---
 
 export const useCreateProjectMutation = () => {
@@ -149,5 +171,36 @@ export const useGetProjectQuery = (id: string) => {
     queryKey: QUERY_KEYS.PROJECTS.DETAIL(id),
     queryFn: () => getProjectByIdApi(id),
     enabled: !!id,
+  });
+};
+
+export const useSendForReviewMutation = (projectId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!projectId) {
+        throw new Error('Project is missing. Please open a valid project first.');
+      }
+      return sendForReviewApi(projectId);
+    },
+    onSuccess: () => {
+      if (!projectId) return;
+
+      // Refresh the single project (workflow_status changes to under_review)
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.PROJECTS.DETAIL(projectId),
+      });
+
+      // Refresh any project lists (owner/estimator + engineer views)
+      queryClient.invalidateQueries({
+        queryKey: ['projects', 'list'],
+      });
+
+      // Refresh notifications since sending for review triggers one
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.NOTIFICATIONS.LIST(),
+      });
+    },
   });
 };

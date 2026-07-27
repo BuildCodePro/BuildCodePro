@@ -33,17 +33,21 @@ export interface AcceptInviteFormData {
 export interface AuthUser {
   id: string;
   email: string;
+  avatar_url?: string;
   name: string;
   role: UserRole;
   modules?:
-  { ai_design_engine: boolean, bom_generation: boolean, pdf_export: boolean, compliance_engine: boolean, }
-  ai_design_engine?:boolean
-  bom_generation?:boolean
-  compliance_engine?:boolean
-  csv_export?:boolean
-  dedicated_support?:boolean
-  pdf_export?:boolean
-  team_accounts?:boolean
+  {
+    ai_design_engine: boolean, bom_generation: boolean, pdf_export: boolean, compliance_engine: boolean, team_accounts: boolean,
+    dedicated_support: boolean,
+  }
+  ai_design_engine?: boolean
+  bom_generation?: boolean
+  compliance_engine?: boolean
+  csv_export?: boolean
+  dedicated_support?: boolean
+  pdf_export?: boolean
+  team_accounts?: boolean
   companyName?: string;
   is_verified?: boolean;
   is_active?: boolean;

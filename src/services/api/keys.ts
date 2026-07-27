@@ -22,6 +22,8 @@ export const QUERY_KEYS = {
     PROJECTS: {
         LIST: (params?: Record<string, unknown>) => params ? ['projects', 'list', params] : ['projects', 'list'],
         DETAIL: (projectId: string) => ['projects', 'detail', projectId],
+        SEND_FOR_REVIEW: (projectId: string) => ['projects', projectId, 'send-for-review'] as const,
+
 
         DRAWINGS: {
             LIST: (projectId: string) => ['projects', projectId, 'drawings', 'list'] as const,
@@ -119,7 +121,7 @@ export const QUERY_KEYS = {
         INVOICES: (params?: { page?: number; page_size?: number }) =>
             ['admin', 'subscriptions', 'invoices', params ?? {}] as const,
     },
-    USER_INVOICE:{
+    USER_INVOICE: {
         INVOICES_USER: (params?: { page?: number; page_size?: number }) =>
             ['user', 'billing', 'invoices', params ?? {}] as const,
     }

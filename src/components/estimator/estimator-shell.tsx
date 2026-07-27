@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { EstimatorHeader } from "./estimator-header";
 import { EstimatorSidebar } from "./estimator-sidebar";
+import { DashboardHeader } from "../dashboard";
 
 interface EstimatorShellProps {
   children: React.ReactNode;
@@ -47,11 +48,9 @@ export function EstimatorShell({ children }: EstimatorShellProps) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <EstimatorHeader
-          title={title}
+        <DashboardHeader title={title}
           userName={userName}
-          onMenuClick={() => setIsMobileNavOpen(true)}
-        />
+          onMenuClick={() => setIsMobileNavOpen(true)} />
         <main className="w-full flex-1 px-6 py-6">{children}</main>
       </div>
     </div>

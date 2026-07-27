@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { SuperAdminHeader } from "./super-admin-header";
 import { SuperAdminSidebar } from "./super-admin-sidebar";
+import { DashboardHeader } from "../dashboard";
 
 interface SuperAdminShellProps {
   children: React.ReactNode;
@@ -49,11 +50,9 @@ export function SuperAdminShell({ children }: SuperAdminShellProps) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <SuperAdminHeader
-          title={title}
+        <DashboardHeader title={title}
           userName={userName}
-          onMenuClick={() => setIsMobileNavOpen(true)}
-        />
+          onMenuClick={() => setIsMobileNavOpen(true)} />
         <main className="w-full flex-1 px-6 py-6">{children}</main>
       </div>
     </div>

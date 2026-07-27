@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { EngineerHeader } from "./engineer-header";
 import { EngineerSidebar } from "./engineer-sidebar";
+import { DashboardHeader } from "../dashboard";
 
 interface EngineerShellProps {
   children: React.ReactNode;
@@ -49,11 +50,9 @@ export function EngineerShell({ children }: EngineerShellProps) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <EngineerHeader
-          title={title}
+        <DashboardHeader title={title}
           userName={userName}
-          onMenuClick={() => setIsMobileNavOpen(true)}
-        />
+          onMenuClick={() => setIsMobileNavOpen(true)} />
         <main className="w-full flex-1 px-6 py-6">{children}</main>
       </div>
     </div>

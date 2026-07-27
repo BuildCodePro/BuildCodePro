@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import type { SupportTicketListItem } from "@/services/supportService";
 import { cn } from "@/lib/utils/cn";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface SupportTicketsTableProps {
   tickets: SupportTicketListItem[];
@@ -76,7 +77,7 @@ export function SupportTicketsTable({
           ) : tickets.length === 0 ? (
             <TableRow>
               <TableCell colSpan={8} className="py-8 text-center text-stat-label">
-                No support tickets found.
+                <TableEmptyState title="No Tickets Found" />
               </TableCell>
             </TableRow>
           ) : (

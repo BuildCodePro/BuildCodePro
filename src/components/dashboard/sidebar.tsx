@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, X } from "lucide-react";
 
 import { Logo } from "@/components/icons/logo";
 import { getMainNavigation } from "@/config/navigation";
@@ -11,6 +12,7 @@ import { logout } from "@/lib/auth/session";
 import { cn } from "@/lib/utils/cn";
 
 import { SidebarNavItem } from "./sidebar-nav-item";
+import { LogoutModal } from "@/components/auth/logout-model";
 import { useAuthStore } from "@/store/auth-store";
 
 
@@ -23,15 +25,29 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
 
-  const navigation = getMainNavigation({
-    team_accounts: user?.team_accounts,
-    dedicated_support: user?.dedicated_support,
-  });
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const navigation = hasHydrated
+    ? getMainNavigation({
+      role: user?.role,
+      modules: {
+        team_accounts: user?.modules?.team_accounts,
+        dedicated_support: user?.modules?.dedicated_support,
+      },
+    })
+    : [];
+
   const handleLogout = () => {
     logout();
     onNavigate?.();
     router.replace(routes.login);
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    handleLogout();
   };
 
   return (
@@ -71,13 +87,19 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
       <div className="mx-4 mb-6">
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={() => setIsLogoutModalOpen(true)}
           className="flex h-[41px] w-full items-center gap-[14px] rounded-[10px] border border-white/10 px-[14px] py-3 font-body text-sm font-medium text-sidebar-foreground transition-colors hover:bg-white/5 hover:text-white"
         >
           <LogOut className="size-[18px] shrink-0" aria-hidden="true" />
           Logout
         </button>
       </div>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </aside>
   );
 }

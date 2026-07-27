@@ -52,14 +52,12 @@ export type ResetPasswordDto = {
 // --- API Response Types ---
 
 export interface LoginApiResponse {
-  // OTP required flow
   requires_otp?: boolean;
   message?: string;
   access_token?: string | null;
   refresh_token?: string | null;
   role?: string | null;
 
-  // Standard session fields (direct)
   accessToken?: string;
   token?: string;
   user?: {
@@ -73,7 +71,6 @@ export interface LoginApiResponse {
     subtitle?: string;
   };
 
-  // Nested under payload
   payload?: {
     accessToken?: string;
     token?: string;
@@ -96,7 +93,6 @@ export interface LoginApiResponse {
     };
   };
 
-  // Nested under data
   data?: {
     accessToken?: string;
     token?: string;
@@ -115,7 +111,6 @@ export interface LoginApiResponse {
   };
 }
 
-
 export interface Company {
   id: string;
   name: string;
@@ -126,6 +121,8 @@ export interface MeResponse {
   id: string;
   email: string;
   name: string;
+  avatar_url?: string;
+  phone?: string;
   role: string;
   is_verified: boolean;
   is_active: boolean;
@@ -136,15 +133,11 @@ export interface MeResponse {
   updated_at: string;
 }
 
-// --- API Function ---
+// --- API Functions ---
 
 const getMeApi = async (): Promise<MeResponse> => {
   return apiRequest<MeResponse>(API_ENDPOINTS.AUTH.ME);
 };
-
-// --- TanStack Query Hook ---
-
-
 
 const registerApi = async (data: RegisterDto) => {
   return apiRequest(API_ENDPOINTS.AUTH.REGISTER, {
@@ -246,11 +239,9 @@ export const applySession = (
 ) => {
   const raw = data?.payload ?? data?.data ?? data;
 
-  // Support both camelCase and snake_case token fields
   const accessToken: string =
     raw?.accessToken ?? raw?.token ?? (raw as any)?.access_token ?? (data as any)?.access_token ?? '';
 
-  // Support both camelCase and snake_case role fields
   const rawUser = raw?.user;
   const directRole: string =
     (data as any)?.role ?? raw?.role ?? rawUser?.role ?? rawUser?.roleName ?? '';
@@ -267,7 +258,6 @@ export const applySession = (
     throw new Error('Invalid response from server: Missing user role.');
   }
 
-  // Build user — if no user object, decode minimal info from JWT sub
   let userId = '';
   let userEmail = '';
   let userName = '';
@@ -277,7 +267,6 @@ export const applySession = (
     userEmail = rawUser.email ?? '';
     userName = rawUser.name ?? '';
   } else {
-    // Decode JWT payload to extract sub (user id)
     try {
       const payload = JSON.parse(atob(accessToken.split('.')[1]));
       userId = payload?.sub ?? '';
@@ -291,6 +280,36 @@ export const applySession = (
   setSession(user, accessToken, role);
 };
 
+// --- Helper: fetch /auth/me and sync it into the persisted auth store ---
+// This runs after every flow that establishes a session (login, verify
+// email, verify OTP) so that `useAuthStore` — and therefore localStorage —
+// always holds the full, fresh profile instead of just the minimal data
+// decoded from the JWT.
+const fetchAndSyncMe = async (
+  updateUser: (user: Partial<AuthUser>) => void,
+): Promise<MeResponse | null> => {
+  try {
+    const meData = await getMeApi();
+    updateUser(meData as unknown as Partial<AuthUser>);
+    return meData;
+  } catch (error) {
+    console.error('Failed to fetch /auth/me and sync session:', error);
+    return null;
+  }
+};
+
+const extractToken = (response: LoginApiResponse): string | undefined => {
+  return (
+    response?.access_token ||
+    response?.accessToken ||
+    response?.token ||
+    response?.payload?.accessToken ||
+    response?.data?.accessToken ||
+    response?.data?.token ||
+    undefined
+  );
+};
+
 // --- TanStack Query Hooks ---
 
 export const useMeQuery = () => {
@@ -299,7 +318,6 @@ export const useMeQuery = () => {
     queryFn: getMeApi,
   });
 };
-
 
 export const useRegisterMutation = () => {
   return useMutation({
@@ -314,23 +332,10 @@ export const useVerifyEmailMutation = () => {
   return useMutation({
     mutationFn: async (data: VerifyEmailDto) => {
       const response = await verifyEmailApi(data);
-      const hasToken =
-        response?.access_token ||
-        response?.accessToken ||
-        response?.token ||
-        response?.payload?.accessToken ||
-        response?.data?.accessToken ||
-        response?.data?.token;
 
-      if (hasToken) {
+      if (extractToken(response)) {
         applySession(response, setSession);
-
-        try {
-          const meData = await getMeApi();
-          updateUser(meData as unknown as Partial<AuthUser>);
-        } catch (error) {
-          console.error("Failed to fetch ME data after email verification:", error);
-        }
+        await fetchAndSyncMe(updateUser);
       }
 
       return response;
@@ -346,15 +351,21 @@ export const useResendVerificationMutation = () => {
 
 export const useLoginMutation = () => {
   const setSession = useAuthStore((s) => s.setSession);
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const data = await loginApi(credentials);
-      // If backend requires OTP verification, don't try to set a session yet
+
+      // If backend requires OTP verification, don't set a session yet —
+      // /auth/me will be synced once OTP is verified instead.
       if (data.requires_otp) {
         return data;
       }
+
       applySession(data, setSession);
+      await fetchAndSyncMe(updateUser);
+
       return data;
     },
   });
@@ -367,22 +378,12 @@ export const useVerifyOTPMutation = () => {
   return useMutation({
     mutationFn: async (data: VerifyOTPDto) => {
       const response = await verifyOTPApi(data);
-      // If the response contains an access token (login OTP flow), apply session
-      const hasToken =
-        (response as any)?.access_token ||
-        (response as any)?.accessToken ||
-        (response as any)?.token ||
-        (response as any)?.payload?.accessToken;
-      if (hasToken) {
-        applySession(response as LoginApiResponse, setSession);
-        
-        try {
-          const meData = await getMeApi();
-          updateUser(meData as unknown as Partial<AuthUser>);
-        } catch (error) {
-          console.error("Failed to fetch ME data after OTP verification:", error);
-        }
+
+      if (extractToken(response)) {
+        applySession(response, setSession);
+        await fetchAndSyncMe(updateUser);
       }
+
       return response;
     },
   });
@@ -395,8 +396,17 @@ export const useResendOTPMutation = () => {
 };
 
 export const useRefreshMutation = () => {
+  const updateUser = useAuthStore((s) => s.updateUser);
+
   return useMutation({
-    mutationFn: refreshApi,
+    mutationFn: async () => {
+      const response = await refreshApi();
+      // After a silent token refresh, also resync the profile so any
+      // server-side changes (e.g. plan upgrade, name change) reflect
+      // in the persisted store.
+      await fetchAndSyncMe(updateUser);
+      return response;
+    },
   });
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileTerminal, Loader2 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { InvoiceStatusBadge } from "@/components/ui/invoice-status-badge";
@@ -22,6 +22,7 @@ import { API_ENDPOINTS } from "@/services/api/endpoints";
 import { useState } from "react";
 import { InvoiceStatus } from "@/lib/constants/billing";
 import { useInvoicesQuery } from "@/services/userBillingService";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface InvoiceHistoryProps {
   className?: string;
@@ -70,7 +71,7 @@ export function InvoiceHistory({ className }: InvoiceHistoryProps) {
 
   const invoicesQuery = useInvoicesQuery({
     page: 1,
-    page_size: 50,
+    page_size: 10,
     ...(companyId ? { company_id: companyId } : {}),
   } as never);
 
@@ -127,7 +128,7 @@ export function InvoiceHistory({ className }: InvoiceHistoryProps) {
                   colSpan={6}
                   className="text-center text-sm text-stat-label"
                 >
-                  No invoices found.
+                  <TableEmptyState title="No invoices found." icon={<FileTerminal className="w-8 h-8" />} />
                 </TableCell>
               </TableRow>
             ) : (

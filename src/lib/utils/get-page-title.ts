@@ -6,8 +6,10 @@ export function getPageTitle(pathname: string): string {
   const user = useAuthStore.getState().user;
 
   const navigation = getMainNavigation({
-    team_accounts: user?.team_accounts,
-    dedicated_support: user?.dedicated_support,
+    modules: {
+      team_accounts: user?.team_accounts,
+      dedicated_support: user?.dedicated_support,
+    }
   });
 
   const exactMatch = navigation.find((item) => item.href === pathname);

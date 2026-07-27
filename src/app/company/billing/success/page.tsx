@@ -6,6 +6,8 @@ import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { useSubscriptionQuery } from "@/services/billingService";
+import { useMeQuery } from "@/services/authService";
+import { useAuthStore } from "@/store/auth-store";
 import { cn } from "@/lib/utils/cn";
 
 export default function BillingSuccessPage() {
@@ -22,6 +24,9 @@ export default function BillingSuccessPage() {
     refetch,
     isFetching,
   } = useSubscriptionQuery();
+
+  const { refetch: refetchMe } = useMeQuery();
+  const updateUser = useAuthStore((s) => s.updateUser);
 
   useEffect(() => {
     if (!sessionId) {
@@ -44,6 +49,7 @@ export default function BillingSuccessPage() {
         result.data?.subscription_status === "trialing";
 
       if (isActive) {
+        await syncMeIntoStore();
         setStatus("success");
         return;
       }
@@ -53,7 +59,26 @@ export default function BillingSuccessPage() {
       } else {
         // Even if we can't confirm yet, checkout itself succeeded
         // (Stripe only redirects here on success), so don't scare the user.
+        // Still try to sync /auth/me in case the plan/modules already
+        // updated server-side even though subscription_status polling
+        // hasn't caught up.
+        await syncMeIntoStore();
         setStatus("success");
+      }
+    };
+
+    // Re-fetches /auth/me and pushes the fresh plan + modules into the
+    // persisted auth store, so permission checks (useModulePermission,
+    // sidebar nav, tab gating, etc.) unlock immediately without the
+    // user needing to manually refresh the page.
+    const syncMeIntoStore = async () => {
+      try {
+        const result = await refetchMe();
+        if (result.data) {
+          updateUser(result.data as any);
+        }
+      } catch (error) {
+        console.error("Failed to sync profile after checkout:", error);
       }
     };
 

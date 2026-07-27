@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "./api/endpoints";
 import { QUERY_KEYS } from "./api/keys";
+import { useAuthStore } from "@/store/auth-store";
 
 // --- Types ---
 
@@ -108,14 +109,36 @@ const changePasswordApi = async (
     });
 };
 
+// --- Helper: sync a fresh ProfileResponse into the persisted auth store ---
+// Since these endpoints already return the full updated profile in their
+// response, we sync directly from that response instead of re-fetching
+// /auth/me — one less network round trip, and the store (and therefore
+// localStorage, since useAuthStore uses zustand's `persist` middleware)
+// is updated with the exact data the server just confirmed.
+const syncProfileToStore = (
+    profile: ProfileResponse,
+    updateUser: (user: Record<string, unknown>) => void,
+) => {
+    updateUser({
+        name: profile.full_name,
+        email: profile.email,
+        avatarUrl: profile.avatar_url,
+        companyName: profile.company_name,
+        plan: profile.plan,
+        modules: profile.modules,
+    });
+};
+
 // --- TanStack Query Hooks ---
 
 export const useUpdateProfileMutation = () => {
     const queryClient = useQueryClient();
+    const updateUser = useAuthStore((s) => s.updateUser);
 
     return useMutation({
         mutationFn: updateProfileApi,
-        onSuccess: () => {
+        onSuccess: (data) => {
+            syncProfileToStore(data, updateUser);
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ME });
         },
     });
@@ -123,10 +146,12 @@ export const useUpdateProfileMutation = () => {
 
 export const useUploadAvatarMutation = () => {
     const queryClient = useQueryClient();
+    const updateUser = useAuthStore((s) => s.updateUser);
 
     return useMutation({
         mutationFn: uploadAvatarApi,
-        onSuccess: () => {
+        onSuccess: (data) => {
+            syncProfileToStore(data, updateUser);
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ME });
         },
     });
@@ -140,11 +165,24 @@ export const useRequestEmailChangeMutation = () => {
 
 export const useVerifyEmailChangeMutation = () => {
     const queryClient = useQueryClient();
+    const updateUser = useAuthStore((s) => s.updateUser);
 
     return useMutation({
         mutationFn: verifyEmailChangeApi,
-        onSuccess: () => {
+        onSuccess: async () => {
+            // This endpoint returns only { message }, not the full profile,
+            // so we need an explicit /auth/me refetch to get the new email.
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ME });
+            try {
+                const fresh = await apiRequest<ProfileResponse>(
+                    API_ENDPOINTS.PROFILE.UPDATE === API_ENDPOINTS.PROFILE.UPDATE
+                        ? API_ENDPOINTS.AUTH?.ME ?? "/auth/me"
+                        : "/auth/me",
+                );
+                syncProfileToStore(fresh, updateUser);
+            } catch (error) {
+                console.error("Failed to resync profile after email change:", error);
+            }
         },
     });
 };

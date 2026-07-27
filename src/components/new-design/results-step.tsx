@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import { MetricCard, MetricCardGrid } from "@/components/ui/metric-card";
 import { MetricCardSkeleton } from "@/components/ui/metric-card-skeleton";
 import { TabPanel, UnderlineTabs } from "@/components/ui/underline-tabs";
@@ -16,9 +18,19 @@ import {
   formatComplianceSubtitle,
   formatProjectMetadata,
 } from "@/lib/utils/format-project-metadata";
-import type { DesignRecommendation, DesignResults, ProjectInfoFormData, RecommendationAccent, RecommendationBadgeVariant, ResultsTabId } from "@/types/new-design";
+import type {
+  DesignRecommendation,
+  DesignResults,
+  ProjectInfoFormData,
+  RecommendationAccent,
+  RecommendationBadgeVariant,
+  ResultsTabId,
+} from "@/types/new-design";
 import { useAnalysisResultQuery } from "@/services/analysisService";
 import { useCreateExportMutation } from "@/services/exportService";
+import { useGetProjectQuery, useSendForReviewMutation } from "@/services/projectService";
+import { useModulePermission } from "@/hooks/use-permission";
+import { useState } from "react";
 
 import { BomMaterialTakeoffPanel } from "./bom-material-takeoff-panel";
 import { ComplianceChecklistPanel } from "./compliance-checklist-panel";
@@ -27,7 +39,9 @@ import { DesignRecommendationsPanel } from "./design-recommendations-panel";
 import { DesignNarrativePanel } from "./design-narrative-panel";
 import { ExportsPanel } from "./exports-panel";
 import { ResultsProjectHeader } from "./results-project-header";
-import { useAuthStore } from "@/store/auth-store";
+import { UpgradeAccountFallback } from "./upgrade-account-fallback";
+import Link from "next/link";
+import { formatDate } from "@/lib/utils/format-date";
 
 interface ResultsStepProps {
   projectInfo: ProjectInfoFormData;
@@ -42,21 +56,43 @@ export function ResultsStep({
   results,
   onExport,
 }: ResultsStepProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] =
     useState<ResultsTabId>("design-recommendations");
+  const [isSendForReviewOpen, setIsSendForReviewOpen] = useState(false);
+
   const createExportMutation = useCreateExportMutation(projectId);
-  const { user } = useAuthStore();
+  const sendForReviewMutation = useSendForReviewMutation(projectId);
+  const { hasModule } = useModulePermission();
+
+  // --- Fetch the single project first, so we know its workflow_status ---
+  const {
+    data: projectDetail,
+    isLoading: isProjectLoading,
+    isError: isProjectError,
+  } = useGetProjectQuery(projectId ?? "");
+
+  const workflowStatus: string | undefined = projectDetail?.workflow_status;
+
+  const isDraftWorkflow = workflowStatus === "draft";
+
+  // Send for Review is only valid once AI analysis has finished.
+  const canSendForReview = workflowStatus === "ai_complete" || workflowStatus === "change_request";
 
   const {
     data: analysisResult,
     isLoading: isAnalysisLoading,
     isError: isAnalysisError,
     error: analysisError,
-  } = useAnalysisResultQuery(projectId);
+  } = useAnalysisResultQuery(isDraftWorkflow ? null : projectId);
 
   const projectName = getProjectDisplayName(projectInfo);
   const metadata = formatProjectMetadata(projectInfo);
   const complianceSubtitle = formatComplianceSubtitle(projectInfo, projectName);
+  const drawingImage = analysisResult?.drawings[0]?.file_url;
+
+  const canUseBom = hasModule("bom_generation");
+  const canUseCompliance = hasModule("compliance_engine");
 
   const handleExportReport = async () => {
     if (onExport) {
@@ -90,6 +126,33 @@ export function ResultsStep({
     } catch (error: any) {
       const message =
         error instanceof Error ? error.message : error.data.message;
+      toast.error(message);
+    }
+  };
+
+  const handleResumeProject = () => {
+    if (!projectId) {
+      toast.error("Project is missing. Please open a valid project first.");
+      return;
+    }
+    router.push(``);
+  };
+
+  const handleConfirmSendForReview = async () => {
+    if (!projectId) {
+      toast.error("Project is missing. Please open a valid project first.");
+      return;
+    }
+
+    try {
+      await sendForReviewMutation.mutateAsync();
+      toast.success("Project sent for engineer review.");
+      setIsSendForReviewOpen(false);
+    } catch (error: any) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : error?.data?.message || "Failed to send project for review.";
       toast.error(message);
     }
   };
@@ -213,8 +276,92 @@ export function ResultsStep({
       reviewCount: results?.compliance?.reviewCount || 0,
     };
 
+  // --- Still figuring out the project's workflow status ---
+  if (isProjectLoading) {
+    return (
+      <div className="space-y-6">
+        <MetricCardGrid>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <MetricCardSkeleton
+              key={`project-status-skeleton-${index}`}
+              hasDescription={true}
+            />
+          ))}
+        </MetricCardGrid>
+      </div>
+    );
+  }
+
+  // --- Draft workflow: never fetch/show analysis results. Show a resume
+  // fallback instead so the user can go finish the wizard for this project. ---
+  if (isDraftWorkflow) {
+    return (
+      <div className="space-y-6">
+
+        <ResultsProjectHeader
+          projectName={projectName}
+          metadata={metadata}
+          generatedAt={undefined}
+        />
+
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-amber-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="size-6 text-amber-600"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                />
+              </svg>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-body text-base font-semibold text-foreground">
+                This project is still a draft
+              </h3>
+              <p className="mx-auto max-w-md font-body text-sm text-stat-label">
+                Drawings haven&apos;t been uploaded and AI analysis hasn&apos;t
+                run yet for this project. Resume the project to finish the
+                remaining steps before viewing results.
+              </p>
+            </div>
+
+            <Link
+              href={`/company/new-design?projectId=${projectId}&step=project-info`}
+              className="flex h-11 max-w-[300px] items-center justify-center rounded-lg bg-primary px-6 text-white hover:bg-primary/80"
+            >
+              Resume Project
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isProjectError) {
+    // Non-blocking: fall through to normal results view using whatever
+    // `results` prop / analysis query state is available, but let the
+    // user know project status couldn't be confirmed.
+  }
+
   return (
     <div className="space-y-6">
+      {isProjectError ? (
+        <AlertBanner
+          title="Couldn't confirm project status"
+          description="Showing the best available results. Some data may be out of date."
+        />
+      ) : null}
+
       {isAnalysisError ? (
         <AlertBanner
           title="Couldn't load analysis result"
@@ -225,6 +372,16 @@ export function ResultsStep({
           }
         />
       ) : null}
+      {projectDetail?.engineer_notes && (
+
+        <AlertBanner
+          variant="warning"
+          title="Engineer Notes"
+          description={projectDetail?.engineer_notes}
+          badge={projectDetail?.workflow_status}
+          time={formatDate(projectDetail?.engineer_reviewed_at || "")}
+        />
+      )}
 
       {activeTab === "compliance" ? (
         <ComplianceScoreHeader
@@ -243,6 +400,14 @@ export function ResultsStep({
           onExport={handleExportReport}
         />
       )}
+
+      {canSendForReview ? (
+        <div className="flex justify-end ">
+          <Button className="md:max-w-[300px]" onClick={() => setIsSendForReviewOpen(true)}>
+            Send for Review
+          </Button>
+        </div>
+      ) : null}
 
       <MetricCardGrid>
         {isAnalysisLoading && !analysisResult
@@ -278,21 +443,31 @@ export function ResultsStep({
               labelledBy="tab-design-recommendations"
             >
               <DesignRecommendationsPanel
+                design_image={drawingImage}
                 recommendations={recommendations}
               />
             </TabPanel>
           ) : null}
-          {user?.bom_generation && activeTab === "bom" && (
-            <TabPanel id="tabpanel-bom" labelledBy="tab-bom">
-              <BomMaterialTakeoffPanel projectId={projectId} />
-            </TabPanel>
-          )}
 
-          {user?.compliance_engine && activeTab === "compliance" && (
-            <TabPanel id="tabpanel-compliance" labelledBy="tab-compliance">
-              <ComplianceChecklistPanel projectId={projectId as string} />
+          {activeTab === "bom" ? (
+            <TabPanel id="tabpanel-bom" labelledBy="tab-bom">
+              {canUseBom ? (
+                <BomMaterialTakeoffPanel projectId={projectId} />
+              ) : (
+                <UpgradeAccountFallback featureName="BOM Generation" />
+              )}
             </TabPanel>
-          )}
+          ) : null}
+
+          {activeTab === "compliance" ? (
+            <TabPanel id="tabpanel-compliance" labelledBy="tab-compliance">
+              {canUseCompliance ? (
+                <ComplianceChecklistPanel projectId={projectId as string} />
+              ) : (
+                <UpgradeAccountFallback featureName="Compliance Engine" />
+              )}
+            </TabPanel>
+          ) : null}
 
           {activeTab === "narrative" ? (
             <TabPanel id="tabpanel-narrative" labelledBy="tab-narrative">
@@ -314,6 +489,27 @@ export function ResultsStep({
           ) : null}
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={isSendForReviewOpen}
+        onClose={() => {
+          if (!sendForReviewMutation.isPending) {
+            setIsSendForReviewOpen(false);
+          }
+        }}
+        title="Send for Engineer Review"
+        description="This will move the project into the engineer review queue. You won't be able to make changes while it's under review."
+        confirmText="Send for Review"
+        cancelText="Cancel"
+        isConfirming={sendForReviewMutation.isPending}
+        onConfirm={handleConfirmSendForReview}
+      >
+        <p className="text-sm text-stat-label">
+          <span className="font-medium text-foreground">{projectName}</span>{" "}
+          will be sent to the assigned engineer for review. Make sure the
+          design recommendations and BOM look correct before continuing.
+        </p>
+      </Modal>
     </div>
   );
 }

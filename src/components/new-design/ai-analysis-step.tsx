@@ -27,7 +27,41 @@ interface AiAnalysisStepProps {
   onCancel?: () => void;
 }
 
+type AnalysisLifecycleStatus =
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
+// Structured API error payload, e.g.:
+// { error_code: "ANALYSIS_NOT_RETRYABLE", message: "...", timestamp: "..." }
+interface ApiErrorPayload {
+  error_code?: string;
+  message?: string;
+  timestamp?: string;
+}
+
+function extractApiErrorPayload(error: any): ApiErrorPayload | null {
+  if (!error) return null;
+
+  const candidate =
+    error?.data ??
+    error?.response?.data ??
+    (typeof error === "object" ? error : null);
+
+  if (candidate && typeof candidate === "object" && "message" in candidate) {
+    return candidate as ApiErrorPayload;
+  }
+
+  return null;
+}
+
+function getErrorMessage(error: any, fallback: string): string {
+  const payload = extractApiErrorPayload(error);
+  if (payload?.message) return payload.message;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
 
 export function AiAnalysisStep({
   files,
@@ -39,6 +73,19 @@ export function AiAnalysisStep({
 }: AiAnalysisStepProps) {
   const [targetTasks, setTargetTasks] = useState<AnalysisTaskState[]>([]);
   const [displayTasks, setDisplayTasks] = useState<AnalysisTaskState[]>([]);
+
+  // Tracks the actual lifecycle state of the analysis job so we know
+  // whether Retry / Cancel should be enabled. Starts as "running" since
+  // a job_id means an analysis was just kicked off.
+  const [analysisStatus, setAnalysisStatus] =
+    useState<AnalysisLifecycleStatus>("running");
+
+  // Reset lifecycle status whenever a new job starts (e.g. after retry).
+  useEffect(() => {
+    if (jobId) {
+      setAnalysisStatus("running");
+    }
+  }, [jobId]);
 
   const handleEvent = (event: AnalysisWsEvent) => {
     if (event.steps && Array.isArray(event.steps)) {
@@ -112,9 +159,13 @@ export function AiAnalysisStep({
       projectId,
       jobId,
       onEvent: handleEvent,
-      onComplete,
+      onComplete: () => {
+        setAnalysisStatus("completed");
+        onComplete?.();
+      },
       onError: (err) => {
         console.error("[AiAnalysisStep] WebSocket error:", err);
+        setAnalysisStatus("failed");
       },
     });
 
@@ -129,31 +180,60 @@ export function AiAnalysisStep({
 
   const cancelAnalysis = useCancelAiAnalysis(projectId ?? "", jobId ?? "");
   const retryAnalysis = useRetryAiAnalysis(projectId ?? "", jobId ?? "");
+
   const handleCancel = () => {
     // disconnect();
     cancelAnalysis.mutate(undefined, {
       onSuccess: () => {
-        toast.success("AI Analysis cancel successfull")
+        setAnalysisStatus("cancelled");
+        toast.success("AI Analysis cancelled successfully.");
+        onCancel?.();
       },
       onError: (error: any) => {
-        toast.success(error.message || error.data.message)
-      }
-    })
+        toast.error(getErrorMessage(error, "Failed to cancel analysis."));
+      },
+    });
   };
+
   const retryAi = () => {
-    disconnect();
+    // disconnect();
     retryAnalysis.mutate(undefined, {
       onSuccess: () => {
-        toast.success("AI Analysis cancel successfull")
+        setAnalysisStatus("running");
+        toast.success("AI Analysis retry started successfully.");
       },
-      onError: (error :any) => {
-        toast.success(error.message || error.data.message)
-      }
-    })
+      onError: (error: any) => {
+        const payload = extractApiErrorPayload(error);
+        const message = getErrorMessage(
+          error,
+          "Failed to retry analysis. Please try again.",
+        );
+
+        // Backend told us this job can't be retried right now (e.g. it's
+        // still running or already completed) — surface that clearly and
+        // make sure our local status doesn't claim otherwise.
+        if (payload?.error_code === "ANALYSIS_NOT_RETRYABLE") {
+          toast.error(message);
+          return;
+        }
+
+        toast.error(message);
+      },
+    });
   };
 
   const isRunning =
-    connectionStatus === "connecting" || connectionStatus === "connected";
+    (connectionStatus === "connecting" || connectionStatus === "connected") &&
+    analysisStatus === "running";
+
+  // Retry is only meaningful once the job has actually stopped in a
+  // non-successful way (failed or cancelled) — never while it's running
+  // or already completed, since the backend rejects those with
+  // ANALYSIS_NOT_RETRYABLE.
+  const canRetry =
+    analysisStatus === "failed" || analysisStatus === "cancelled";
+
+  const canCancel = isRunning;
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -190,7 +270,10 @@ export function AiAnalysisStep({
         rows={inputRows}
         retryAi={retryAi}
         onCancel={handleCancel}
-        isCancelling={!isRunning && !isComplete}
+        canRetry={canRetry}
+        canCancel={canCancel}
+        isRetrying={retryAnalysis.isPending}
+        isCancelling={cancelAnalysis.isPending}
       />
     </div>
   );

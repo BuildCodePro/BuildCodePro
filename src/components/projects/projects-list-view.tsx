@@ -61,7 +61,7 @@ export function ProjectsListView({
                 {project.occupancyType}
               </TableCell>
               <TableCell>
-                <StatusBadge status={project?.display_status} />
+                <StatusBadge status={project?.display_status || project.workflow_status} />
               </TableCell>
               <TableCell className="text-stat-label">
                 {formatDate(project.lastUpdated)}

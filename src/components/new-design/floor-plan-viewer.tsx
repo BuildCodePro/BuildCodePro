@@ -32,6 +32,7 @@ const WHEEL_ZOOM_STEP = 0.12;
 interface FloorPlanViewerProps {
   className?: string;
   showExpand?: boolean;
+  design_image?: string;
 }
 
 interface PanOffset {
@@ -191,6 +192,7 @@ function ZoomControls({
 
 function PlanViewport({
   zoom,
+  design_image,
   pan,
   viewportSize,
   isDragging,
@@ -203,6 +205,7 @@ function PlanViewport({
 }: {
   zoom: number;
   pan: PanOffset;
+  design_image?: string;
   viewportSize: ViewportSize;
   isDragging: boolean;
   fullscreen?: boolean;
@@ -214,6 +217,16 @@ function PlanViewport({
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+
+  // NEW: track whether the image actually failed to load so we can show
+  // a visible fallback instead of silently rendering nothing.
+  const [imgFailed, setImgFailed] = useState(false);
+
+  // Reset the failure flag whenever the source changes so a new valid URL
+  // gets a fresh chance to load.
+  useEffect(() => {
+    setImgFailed(false);
+  }, [design_image]);
 
   const getLocalPoint = (clientX: number, clientY: number) => {
     const bounds = viewportRef.current?.getBoundingClientRect();
@@ -399,20 +412,41 @@ function PlanViewport({
             transformOrigin: "center center",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={FLOOR_PLAN_SRC}
-            alt="Floor plan blueprint preview"
-            width={IMAGE_WIDTH}
-            height={IMAGE_HEIGHT}
-            draggable={false}
-            onDragStart={(event) => event.preventDefault()}
-            className="pointer-events-none block max-w-none select-none [webkit-user-drag:none]"
-            style={{
-              width: fitted.width,
-              height: fitted.height,
-            }}
-          />
+          {design_image && !imgFailed ? (
+            <img
+              src={design_image}
+              alt="Floor plan blueprint preview"
+              width={IMAGE_WIDTH}
+              height={IMAGE_HEIGHT}
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              onError={(event) => {
+                // Surfaces broken/blocked URLs instead of silently
+                // showing an empty background. Check this log for the
+                // actual failing URL (404, CORS, wrong domain, etc).
+                console.error(
+                  "FloorPlanViewer: failed to load design_image:",
+                  design_image,
+                  event.currentTarget.src,
+                );
+                setImgFailed(true);
+              }}
+              className="pointer-events-none block max-w-none select-none [webkit-user-drag:none]"
+              style={{
+                width: fitted.width,
+                height: fitted.height,
+              }}
+            />
+          ) : (
+            // Visible fallback so a bad URL is obvious instead of just
+            // showing the dark blue background with nothing on it.
+            <div
+              className="flex items-center justify-center rounded-md border border-white/20 bg-white/5 font-body text-xs text-white/70"
+              style={{ width: fitted.width, height: fitted.height }}
+            >
+              {design_image ? "Image failed to load" : "No image provided"}
+            </div>
+          )}
         </div>
       </div>
 
@@ -568,8 +602,10 @@ function useViewportSize(enabled: boolean) {
 
 function FloorPlanFullscreen({
   onClose,
+  design_image,
 }: {
   onClose: () => void;
+  design_image: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const { ref: viewportRef, size: viewportSize } = useViewportSize(mounted);
@@ -680,6 +716,7 @@ function FloorPlanFullscreen({
 
       <div ref={viewportRef} className="relative min-h-0 flex-1">
         <PlanViewport
+          design_image={design_image}
           zoom={zoom}
           pan={pan}
           viewportSize={
@@ -702,9 +739,19 @@ function FloorPlanFullscreen({
 }
 
 export function FloorPlanViewer({
+  design_image,
   className,
   showExpand = true,
 }: FloorPlanViewerProps) {
+  // FIX: fall back to the default preview image whenever design_image is
+  // missing/empty, instead of silently rendering nothing.
+  const resolvedImage = design_image && design_image.trim() !== ""
+    ? design_image
+    : FLOOR_PLAN_SRC;
+
+  console.log("design_image 3", design_image);
+
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { ref: viewportRef, size: viewportSize } = useViewportSize(true);
   const {
@@ -735,6 +782,7 @@ export function FloorPlanViewer({
         <div ref={viewportRef}>
           {viewportSize.width > 0 ? (
             <PlanViewport
+              design_image={resolvedImage}
               zoom={zoom}
               pan={pan}
               viewportSize={viewportSize}
@@ -752,7 +800,7 @@ export function FloorPlanViewer({
       </div>
 
       {isFullscreen ? (
-        <FloorPlanFullscreen onClose={() => setIsFullscreen(false)} />
+        <FloorPlanFullscreen design_image={resolvedImage} onClose={() => setIsFullscreen(false)} />
       ) : null}
     </>
   );

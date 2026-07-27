@@ -66,6 +66,7 @@ export function ProjectsContent({ projectsBasePath }: ProjectsContentProps) {
     jurisdiction: p.jurisdiction,
     occupancyType: p.occupancy_type,
     display_status: p.display_status,
+    workflow_status: p.workflow_status,
     status: p.status as any,
     dateCreated: p.created_at,
     lastUpdated: p.updated_at,

@@ -15,6 +15,8 @@ import {
 } from "@/services/useNotificationService";
 import { useNotificationsSocket } from "@/hooks/use-notification";
 
+import { LogoutModal } from "@/components/auth/logout-model";
+
 interface DashboardHeaderProps {
   title: string;
   userName?: string;
@@ -59,12 +61,14 @@ export function DashboardHeader({
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   const resolvedUserName = userName ?? authUser?.name ?? "John Doe";
   const resolvedUserRole = userRole ?? authRole ?? "estimator";
+  const avatarUrl = authUser?.avatar_url;
 
   const ROLE_ROUTE_MAP: Record<string, string> = {
     company_owner: "company",
@@ -111,6 +115,14 @@ export function DashboardHeader({
   const handleViewAll = () => {
     setIsNotificationsOpen(false);
     router.push("/notifications");
+  };
+
+  const handleConfirmLogout = () => {
+    setIsLogoutModalOpen(false);
+    setIsProfileOpen(false);
+    onLogout?.();
+    localStorage.removeItem("build-auth");
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -243,13 +255,7 @@ export function DashboardHeader({
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleViewAll}
-                className="w-full border-t border-border px-4 py-2.5 text-center font-body text-sm font-medium text-primary hover:bg-slate-50"
-              >
-                View all notifications
-              </button>
+
             </div>
           ) : null}
         </div>
@@ -266,7 +272,7 @@ export function DashboardHeader({
             aria-label="User menu"
             aria-expanded={isProfileOpen}
           >
-            <Avatar name={resolvedUserName} />
+            <Avatar name={resolvedUserName} src={avatarUrl} />
             <span className="hidden font-body text-sm font-medium text-foreground sm:inline">
               {resolvedUserName}
             </span>
@@ -304,12 +310,7 @@ export function DashboardHeader({
 
               <button
                 type="button"
-                onClick={() => {
-                  setIsProfileOpen(false);
-                  onLogout?.();
-                  localStorage.removeItem("build-auth");
-                  window.location.reload();
-                }}
+                onClick={() => setIsLogoutModalOpen(true)}
                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left font-body text-sm text-red-600 transition-colors hover:bg-red-50"
                 role="menuitem"
               >
@@ -320,6 +321,12 @@ export function DashboardHeader({
           ) : null}
         </div>
       </div>
+
+      <LogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </header>
   );
 }

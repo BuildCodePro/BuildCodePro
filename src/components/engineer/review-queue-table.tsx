@@ -15,6 +15,7 @@ import { routes } from "@/config/routes";
 import { ENGINEER_REVIEW_STATUS_LABELS } from "@/lib/constants/engineer";
 import { cn } from "@/lib/utils/cn";
 import type { EngineerReviewStatus, ReviewQueueItem } from "@/types/engineer";
+import { TableEmptyState } from "../ui/emptyState";
 
 const statusStyles: Record<EngineerReviewStatus, string> = {
   "pending-review": "bg-amber-50 text-amber-700",
@@ -75,6 +76,16 @@ export function ReviewQueueTable({
           </TableRow>
         </TableHeader>
         <TableBody>
+          {items.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="h-32 text-center">
+                <TableEmptyState
+                  title="No projects found"
+                  description="There are no projects to review yet."
+                />
+              </TableCell>
+            </TableRow>
+          ) : null}
           {items.map((item) => (
             <TableRow key={item.id}>
               <TableCell>

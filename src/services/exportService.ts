@@ -21,6 +21,7 @@ export interface ExportPreviewProject {
   special_notes: string;
   status: string;
   display_status: string;
+  workflow_status: string;
   jurisdiction_state: string;
   exported_at?: string;
   engineer_review_status?: string;

@@ -1,81 +1,19 @@
-// import { platformActivity } from "@/lib/data/super-admin";
-// import type { PlatformActivity } from "@/types/super-admin";
-// import { cn } from "@/lib/utils/cn";
-
-// interface PlatformActivityFeedProps {
-//   activities?: PlatformActivity[];
-//   className?: string;
-// }
-
-// const typeStyles: Record<PlatformActivity["type"], string> = {
-//   signup: "bg-sky-50 text-sky-700",
-//   upgrade: "bg-emerald-50 text-success",
-//   design: "bg-violet-50 text-violet-700",
-//   support: "bg-amber-50 text-warning",
-//   billing: "bg-primary/10 text-primary",
-// };
-
-// const typeLabels: Record<PlatformActivity["type"], string> = {
-//   signup: "Signup",
-//   upgrade: "Upgrade",
-//   design: "Design",
-//   support: "Support",
-//   billing: "Billing",
-// };
-
-// export function PlatformActivityFeed({
-//   activities = platformActivity,
-//   className,
-// }: PlatformActivityFeedProps) {
-//   return (
-//     <section
-//       className={cn(
-//         "rounded-[16px] border border-border bg-white p-5 sm:p-6",
-//         className,
-//       )}
-//     >
-//       <h2 className="mb-4 text-section-title">Recent Platform Activity</h2>
-
-//       <ul className="space-y-3">
-//         {activities.map((activity) => (
-//           <li
-//             key={activity.id}
-//             className="flex flex-col gap-2 rounded-[12px] border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-//           >
-//             <div className="flex min-w-0 items-start gap-3">
-//               <span
-//                 className={cn(
-//                   "inline-flex shrink-0 rounded-full px-2 py-1 font-body text-[11px] font-semibold uppercase",
-//                   typeStyles[activity.type],
-//                 )}
-//               >
-//                 {typeLabels[activity.type]}
-//               </span>
-//               <p className="font-body text-sm text-foreground">
-//                 {activity.message}
-//               </p>
-//             </div>
-//             <span className="shrink-0 font-body text-xs text-stat-label sm:pl-4">
-//               {activity.timestamp}
-//             </span>
-//           </li>
-//         ))}
-//       </ul>
-//     </section>
-//   );
-// }
-
-
-
 "use client";
 
+import { useState } from "react";
+
+import { Pagination } from "@/components/ui/pagination";
 import { useAdminActivityQuery } from "@/services/adminService";
 import type { ActivityTag } from "@/services/adminService";
 import { cn } from "@/lib/utils/cn";
+import { TableEmptyState } from "../ui/emptyState";
+import { Clock } from "lucide-react";
 
 interface PlatformActivityFeedProps {
   className?: string;
 }
+
+const PAGE_SIZE = 10;
 
 const typeStyles: Record<ActivityTag, string> = {
   signup: "bg-sky-50 text-sky-700",
@@ -111,12 +49,21 @@ function formatTimestamp(dateString: string): string {
 }
 
 export function PlatformActivityFeed({ className }: PlatformActivityFeedProps) {
-  const { data, isLoading } = useAdminActivityQuery({
-    page: 1,
-    page_size: 20,
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, isFetching } = useAdminActivityQuery({
+    page,
+    page_size: PAGE_SIZE,
   });
 
   const activities = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > totalPages) return;
+    setPage(nextPage);
+  };
 
   return (
     <section
@@ -138,34 +85,51 @@ export function PlatformActivityFeed({ className }: PlatformActivityFeedProps) {
         </div>
       ) : activities.length === 0 ? (
         <p className="font-body text-sm text-stat-label">
-          No recent activity.
+          <TableEmptyState title="No recent activity." icon={<Clock className="w-8 h-8" />} />
         </p>
       ) : (
-        <ul className="space-y-3">
-          {activities.map((activity) => (
-            <li
-              key={activity.id}
-              className="flex flex-col gap-2 rounded-[12px] border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="flex min-w-0 items-start gap-3">
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 rounded-full px-2 py-1 font-body text-[11px] font-semibold uppercase",
-                    typeStyles[activity.tag],
-                  )}
-                >
-                  {typeLabels[activity.tag]}
+        <>
+          <ul
+            className={cn(
+              "space-y-3 transition-opacity",
+              isFetching && "opacity-60",
+            )}
+          >
+            {activities.map((activity) => (
+              <li
+                key={activity.id}
+                className="flex flex-col gap-2 rounded-[12px] border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <span
+                    className={cn(
+                      "inline-flex shrink-0 rounded-full px-2 py-1 font-body text-[11px] font-semibold uppercase",
+                      typeStyles[activity.tag],
+                    )}
+                  >
+                    {typeLabels[activity.tag]}
+                  </span>
+                  <p className="font-body text-sm text-foreground">
+                    {activity.description}
+                  </p>
+                </div>
+                <span className="shrink-0 font-body text-xs text-stat-label sm:pl-4">
+                  {formatTimestamp(activity.created_at)}
                 </span>
-                <p className="font-body text-sm text-foreground">
-                  {activity.description}
-                </p>
-              </div>
-              <span className="shrink-0 font-body text-xs text-stat-label sm:pl-4">
-                {formatTimestamp(activity.created_at)}
-              </span>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+
+          {totalPages > 1 ? (
+            <div className="mt-5 flex justify-center border-t border-border pt-4">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

@@ -39,7 +39,7 @@ export function ProjectCard({
             sizes="(max-width: 768px) 100vw, 344px"
           />
           <StatusBadge
-            status={project.display_status}
+            status={project.display_status || project.workflow_status}
             className="absolute top-2.5 right-2.5 shadow-sm"
           />
         </div>

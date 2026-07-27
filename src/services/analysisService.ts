@@ -50,15 +50,31 @@ export interface AnalysisBomSummary {
     control_equipment: number;
     total_items: number;
 }
+export interface Drawing {
+    id: string;
+    project_id: string;
+    company_id: string;
+    uploaded_by_user_id: string | null;
+    file_name: string;
+    content_type: string;
+    file_size: number;
+    status: string;
+    file_url: string;
+    created_at: string;
+    updated_at: string;
+}
 
 export interface AnalysisResultResponse {
     analysis_job_id: string;
+    drawings: Drawing[];
     status: string;
     stats: AnalysisStats;
     recommendations: AnalysisRecommendations;
     bom_summary: AnalysisBomSummary;
     total_cost: number;
 }
+
+
 
 // --- API Function ---
 

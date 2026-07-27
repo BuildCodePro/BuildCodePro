@@ -37,6 +37,9 @@ export const API_ENDPOINTS = {
         UPDATE_PROJECT: (projectId: string) => `/projects/${projectId}`,
         DELETE_PROJECT: (projectId: string) => `/projects/${projectId}`,
 
+        SEND_FOR_REVIEW: (projectId: string) => `/projects/${projectId}/send-for-review`,
+
+
         DRAWINGS: {
             UPLOAD_DRAWING: (projectId: string) => `/projects/${projectId}/drawings`,
             GET_DRAWINGS: (projectId: string) => `/projects/${projectId}/drawings`,

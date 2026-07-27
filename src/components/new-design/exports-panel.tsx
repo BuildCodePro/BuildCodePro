@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AlertBanner } from "@/components/ui/alert-banner";
@@ -16,6 +16,7 @@ import {
   type ExportPreviewResponse,
 } from "@/services/exportService";
 import type { DesignResults, ExportFormatId, ExportPreviewData, ProjectInfoFormData } from "@/types/new-design";
+import { useModulePermission } from "@/hooks/use-permission";
 
 import { ExportOptionsPanel } from "./export-options-panel";
 import type { ExportSectionsPayload } from "./export-options-panel";
@@ -68,12 +69,61 @@ function openDownload(downloadUrl?: string) {
   window.open(downloadUrl, "_blank", "noopener,noreferrer");
 }
 
+function extractErrorMessage(error: any): string {
+  const code = error?.data?.error_code ?? error?.error_code;
+  const backendMessage =
+    error?.data?.message ?? error?.message ?? "Failed to create export. Please try again.";
+
+  if (code === "WORKFLOW_TRANSITION_NOT_ALLOWED") {
+    return "This project's current stage doesn't allow exporting yet. Please make sure the AI analysis has fully completed before exporting.";
+  }
+
+  return backendMessage;
+}
+
 const EMAIL_EXPORT_FORM_ID = "email-export-form";
 
 export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelProps) {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState("");
   const [recipientEmailError, setRecipientEmailError] = useState<string | null>(null);
+
+  const { hasModule } = useModulePermission();
+
+  // Which sections/formats the current plan actually allows.
+  const canExportPdf = hasModule("pdf_export");
+  const canExportCsv = hasModule("csv_export");
+  const canIncludeBom = hasModule("bom_generation");
+  const canIncludeCompliance = hasModule("compliance_engine");
+  // "Email" delivery reuses the pdf format under the hood, so gate it
+  // behind pdf_export as well.
+  const canExportEmail = canExportPdf;
+
+  const allowedSections: ExportSectionsPayload = useMemo(
+    () => ({
+      design_recommendations: true,
+      bom: canIncludeBom,
+      compliance_checklist: canIncludeCompliance,
+      design_narrative: true,
+      nfpa_disclaimer: true,
+      company_branding: true,
+    }),
+    [canIncludeBom, canIncludeCompliance],
+  );
+
+  // Strips out any section the plan doesn't allow, regardless of what
+  // the caller requested — a safety net so a stale UI state (or a
+  // hand-crafted call) can never sneak a locked section into the export.
+  const sanitizeSections = (
+    requested: ExportSectionsPayload,
+  ): ExportSectionsPayload => ({
+    design_recommendations: Boolean(requested.design_recommendations),
+    bom: Boolean(requested.bom) && canIncludeBom,
+    compliance_checklist: Boolean(requested.compliance_checklist) && canIncludeCompliance,
+    design_narrative: Boolean(requested.design_narrative),
+    nfpa_disclaimer: Boolean(requested.nfpa_disclaimer),
+    company_branding: Boolean(requested.company_branding),
+  });
 
   const fallbackPreviewData = buildExportPreviewData(projectInfo, results);
   const previewQuery = useExportPreviewQuery(projectId || undefined);
@@ -97,10 +147,26 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
       return;
     }
 
+    // Gate the format itself against the plan before calling the API.
+    if (format === "pdf" && !canExportPdf) {
+      toast.error("PDF export isn't included in your plan. Please upgrade your account.");
+      return;
+    }
+    if (format === "csv" && !canExportCsv) {
+      toast.error("CSV export isn't included in your plan. Please upgrade your account.");
+      return;
+    }
+    if (format === "email" && !canExportEmail) {
+      toast.error("Emailing exports isn't included in your plan. Please upgrade your account.");
+      return;
+    }
+
+    const safeSections = sanitizeSections(sections);
+
     try {
       const response = await createExportMutation.mutateAsync({
         format: getExportFormat(format),
-        sections,
+        sections: safeSections,
         recipient_email: recipientEmail,
       });
 
@@ -111,13 +177,15 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
         openDownload(response.download_url);
       }
     } catch (error: any) {
-      const message =
-        error instanceof Error ? error.message : error.data.message;
-      toast.error(message);
+      toast.error(extractErrorMessage(error));
     }
   };
 
   const handleOpenEmailModal = () => {
+    if (!canExportEmail) {
+      toast.error("Emailing exports isn't included in your plan. Please upgrade your account.");
+      return;
+    }
     setRecipientEmail("");
     setRecipientEmailError(null);
     setIsEmailModalOpen(true);
@@ -138,14 +206,7 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
     }
 
     setRecipientEmailError(null);
-    await handleCreateExport("email", {
-      design_recommendations: true,
-      bom: true,
-      compliance_checklist: true,
-      design_narrative: true,
-      nfpa_disclaimer: true,
-      company_branding: true,
-    }, email);
+    await handleCreateExport("email", allowedSections, email);
     setIsEmailModalOpen(false);
   };
 
@@ -162,6 +223,13 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
         <AlertBanner
           title="Couldn't load export preview"
           description="Showing local preview data instead. Please try again."
+        />
+      ) : null}
+
+      {!canExportPdf && !canExportCsv ? (
+        <AlertBanner
+          title="Exports aren't included in your plan"
+          description="Upgrade your account to unlock PDF and CSV exports."
         />
       ) : null}
 
@@ -183,6 +251,12 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
               })
             }
             onSendEmail={handleOpenEmailModal}
+            // Optional permission props — safe to ignore if
+            // ExportOptionsPanel doesn't consume them yet.
+            allowedSections={allowedSections}
+            canExportPdf={canExportPdf}
+            canExportCsv={canExportCsv}
+            canExportEmail={canExportEmail}
           />
 
           <section className="space-y-3 rounded-[12px] border border-border bg-white p-4">

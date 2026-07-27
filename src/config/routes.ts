@@ -15,7 +15,7 @@ export const routes = {
   billing: "/company/billing",
   settings: "/company/settings",
   support: "/company/support",
-  notification: "/company/notifications",
+  // notification: "/company/notifications",
   superAdmin: {
     dashboard: "/super-admin",
     companies: "/super-admin/companies",
@@ -30,13 +30,13 @@ export const routes = {
     projects: "/estimator/projects",
     settings: "/estimator/settings",
     support: "/estimator/support",
-    notification: "/estimator/notifications",
+    // notification: "/estimator/notifications",
   },
   engineer: {
     dashboard: "/engineer",
     projects: "/engineer/projects",
     settings: "/engineer/settings",
     support: "/engineer/support",
-    notification: "/engineer/notifications",
+    // notification: "/engineer/notifications",
   },
 } as const;
