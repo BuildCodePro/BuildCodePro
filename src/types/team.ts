@@ -13,7 +13,9 @@ export interface SignupTeamInviteFormData extends InviteTeamMemberFormData {
 }
 
 export interface SignupTeamInvite extends SignupTeamInviteFormData {
+
   id: string;
+
 }
 
 export interface CompanyTeamMember {
