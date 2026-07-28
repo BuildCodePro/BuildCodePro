@@ -20,7 +20,7 @@ import {
   useUploadAvatarMutation,
 } from "@/services/useProfileService";
 
-import { LogoUploadField } from "./logo-upload-field";
+import { toast } from "sonner";
 
 interface ProfileFormData {
   fullName: string;
@@ -28,13 +28,16 @@ interface ProfileFormData {
   email: string;
 }
 
-// Reads the company name off any shape we might have stored/received —
-// nested `company.name` (from /auth/me, MeResponse) or a flat
-// `companyName` / `company_name` (in case some flow ever stores it flat).
 function getCompanyName(source: unknown): string {
   if (!source || typeof source !== "object") return "";
   const s = source as Record<string, any>;
   return s.company?.name ?? s.companyName ?? s.company_name ?? "";
+}
+
+function getFullName(source: unknown): string {
+  if (!source || typeof source !== "object") return "";
+  const s = source as Record<string, any>;
+  return s.full_name || s.name || "";
 }
 
 function getAvatarUrl(source: unknown): string | undefined {
@@ -59,20 +62,21 @@ export function ProfileSettingsForm() {
     null,
   );
 
+
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateProfileMutation = useUpdateProfileMutation();
   const uploadAvatarMutation = useUploadAvatarMutation();
   const requestEmailChangeMutation = useRequestEmailChangeMutation();
 
-  // Prefill the form from whichever source has data, and never let a
-  // source that's missing a field (e.g. `me` still loading, or a stale
-  // `user` that doesn't carry companyName) blank out a value we already
-  // have. We merge field-by-field instead of replacing the whole object.
+
   useEffect(() => {
-    const nextFullName = me?.name || user?.name || "";
+    const nextFullName = getFullName(me) || getFullName(user);
     const nextCompanyName = getCompanyName(me) || getCompanyName(user);
     const nextEmail = me?.email || user?.email || "";
+
+
 
     setFormData((current) => ({
       fullName: nextFullName || current.fullName,
@@ -99,8 +103,6 @@ export function ProfileSettingsForm() {
     if (!file) return;
 
     uploadAvatarMutation.mutate(file);
-
-    // reset input so the same file can be re-selected later if needed
     event.target.value = "";
   };
 
@@ -112,12 +114,18 @@ export function ProfileSettingsForm() {
       { new_email: newEmail.trim() },
       {
         onSuccess: (res) => {
-          setEmailChangeMessage(
-            res?.message ?? "Verification email sent. Please check your inbox.",
-          );
+          const message =
+            res?.message ?? "Verification email sent. Please check your inbox.";
+          setEmailChangeMessage(message);
+          toast.success(message);
         },
-        onError: () => {
-          setEmailChangeMessage("Failed to request email change. Please try again.");
+        onError: (err: any) => {
+          const message =
+            err?.message ||
+            err?.data?.message ||
+            "Failed to request email change. Please try again.";
+          setEmailChangeMessage(message);
+          toast.error(message);
         },
       },
     );
@@ -125,8 +133,6 @@ export function ProfileSettingsForm() {
 
   const isSaving = updateProfileMutation.isPending;
 
-  // Avatar priority: freshly uploaded (this session) > /auth/me response
-  // > whatever is persisted in the store from a previous session.
   const currentAvatarUrl =
     uploadAvatarMutation.data?.avatar_url ??
     getAvatarUrl(me) ??

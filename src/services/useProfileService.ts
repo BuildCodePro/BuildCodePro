@@ -169,20 +169,19 @@ export const useVerifyEmailChangeMutation = () => {
 
     return useMutation({
         mutationFn: verifyEmailChangeApi,
-        onSuccess: async () => {
+        onSuccess: async (data) => {
             // This endpoint returns only { message }, not the full profile,
             // so we need an explicit /auth/me refetch to get the new email.
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ME });
             try {
                 const fresh = await apiRequest<ProfileResponse>(
-                    API_ENDPOINTS.PROFILE.UPDATE === API_ENDPOINTS.PROFILE.UPDATE
-                        ? API_ENDPOINTS.AUTH?.ME ?? "/auth/me"
-                        : "/auth/me",
+                    API_ENDPOINTS.AUTH?.ME ?? "/auth/me",
                 );
                 syncProfileToStore(fresh, updateUser);
             } catch (error) {
                 console.error("Failed to resync profile after email change:", error);
             }
+            return data;
         },
     });
 };

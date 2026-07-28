@@ -66,15 +66,16 @@ export function DashboardHeader({
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const resolvedUserName = userName ?? authUser?.name ?? "John Doe";
+  const resolvedUserName = userName ?? authUser?.full_name ?? "John Doe";
   const resolvedUserRole = userRole ?? authRole ?? "estimator";
-  const avatarUrl = authUser?.avatar_url;
+  const avatarUrl = authUser?.avatar_url || authUser?.avatarUrl;
 
   const ROLE_ROUTE_MAP: Record<string, string> = {
     company_owner: "company",
   };
   const settingsRole = ROLE_ROUTE_MAP[resolvedUserRole] ?? resolvedUserRole;
-  const settingsHref = `/${settingsRole}/settings`;
+  const exartAdmin = settingsRole === "super_admin" ? "super-admin" : settingsRole;
+  const settingsHref = `/${exartAdmin}/settings`;
 
   // --- Live socket connection (unread count + real-time push) ---
   const {

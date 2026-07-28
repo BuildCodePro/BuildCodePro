@@ -55,7 +55,7 @@ export function VerifyEmailForm() {
               ? error.message
               : error.data.message,
           );
-          toast.error("This verification link has expired or is invalid.")
+          toast.error(error.message || error.data.message)
         },
       },
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCheck, Loader2 } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
@@ -11,6 +11,7 @@ import {
   useNotificationsQuery,
 } from "@/services/useNotificationService";
 import { useNotificationsSocket } from "@/hooks/use-notification";
+import { TableEmptyState } from "../ui/emptyState";
 
 const PAGE_SIZE = 10;
 
@@ -102,7 +103,7 @@ export default function NotificationsPage() {
           </div>
         ) : notifications.length === 0 ? (
           <p className="py-10 text-center font-body text-sm text-stat-label">
-            No notifications yet.
+            <TableEmptyState title="No notifications yet." icon={<Bell className="w-8 h-8" />} />
           </p>
         ) : (
           <ul className="divide-y divide-border">

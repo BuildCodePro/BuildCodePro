@@ -15,6 +15,8 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from "@/services/supportService";
+import { TableEmptyState } from "../ui/emptyState";
+import { MessageCircle } from "lucide-react";
 
 interface AdminTicketDetailDialogProps {
   ticketId: string | null;
@@ -154,11 +156,11 @@ export function AdminTicketDetailDialog({
             </h4>
             {ticket.comments.length === 0 ? (
               <p className="font-body text-sm text-stat-label">
-                No comments yet.
+                <TableEmptyState title="No comments yet." icon={<MessageCircle className="w-8 h-8" />} />
               </p>
             ) : (
               <div className="flex flex-col gap-3">
-                {ticket.comments.map((comment : any) => (
+                {ticket.comments.map((comment: any) => (
                   <div
                     key={comment.id}
                     className="rounded-[10px] border border-border px-3 py-2"

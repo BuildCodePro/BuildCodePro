@@ -34,8 +34,10 @@ export interface AuthUser {
   id: string;
   email: string;
   avatar_url?: string;
+  avatarUrl?: string;
   name: string;
   role: UserRole;
+  full_name?: string;
   modules?:
   {
     ai_design_engine: boolean, bom_generation: boolean, pdf_export: boolean, compliance_engine: boolean, team_accounts: boolean,

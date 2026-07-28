@@ -44,6 +44,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminDashboardStatsQuery } from "@/services/adminService";
 import { cn } from "@/lib/utils/cn";
+import { TableEmptyState } from "../ui/emptyState";
+import { Waypoints } from "lucide-react";
 
 interface PlanDistributionPanelProps {
   className?: string;
@@ -78,7 +80,7 @@ export function PlanDistributionPanel({ className }: PlanDistributionPanelProps)
           </div>
         ) : planDistribution.length === 0 ? (
           <p className="font-body text-sm text-stat-label">
-            No plan data available.
+            <TableEmptyState title="No plan data available." icon={<Waypoints className="w-8 h-8" />} />
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

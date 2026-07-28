@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/table";
 import { getBomCategoryLabel } from "@/lib/constants/bom";
 import type { BomLineItem } from "@/types/bom";
+import { TableEmptyState } from "../ui/emptyState";
+import { DnaOffIcon } from "lucide-react";
 
 interface BomLineItemsTableProps {
   items: BomLineItem[];
@@ -55,7 +57,7 @@ export function BomLineItemsTable({
               colSpan={8}
               className="py-8 text-center text-stat-label"
             >
-              No line items in this category
+              <TableEmptyState title="No line items in this category" icon={<DnaOffIcon className="w-8 h-8" />} />
             </TableCell>
           </TableRow>
         ) : (

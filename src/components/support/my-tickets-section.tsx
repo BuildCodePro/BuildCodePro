@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Ticket } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { TicketPriorityBadge } from "@/components/ui/ticket-priority-badge";
 import { TicketStatusBadge } from "@/components/ui/ticket-status-badge";
 import { useSupportTicketsQuery } from "@/services/supportService";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface MyTicketsSectionProps {
   onOpenTicket: (ticketId: string) => void;
@@ -55,9 +56,9 @@ export function MyTicketsSection({ onOpenTicket }: MyTicketsSectionProps) {
             Failed to load your tickets.
           </p>
         ) : tickets.length === 0 ? (
-          <p className="font-body text-sm text-stat-label">
-            You haven&apos;t submitted any tickets yet.
-          </p>
+          <div className="font-body text-sm text-stat-label">
+            <TableEmptyState icon={<Ticket className="w-8 h-8" />} title="You haven&apos;t submitted any tickets yet." />
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {tickets.map((ticket) => (

@@ -20,16 +20,16 @@ type WsIncomingEvent =
   | { event: "connected"; unread_count: number }
   | { event: "notification"; data: WsNotificationData; unread_count: number }
   | {
-      event: "read";
-      notification_ids: string[];
-      unread_count: number;
-      read_at: string;
-    }
+    event: "read";
+    notification_ids: string[];
+    unread_count: number;
+    read_at: string;
+  }
   | { event: "pong" };
 
 function getWebSocketUrl(token: string): string {
   const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+    process.env.NEXT_PUBLIC_API_URL ?? "https://buildcapi.tekxai.com/api/v1";
   const wsBase = apiUrl.replace(/^http/, "ws");
   return `${wsBase}/notifications/ws?token=${token}`;
 }

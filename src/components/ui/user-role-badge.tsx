@@ -8,7 +8,7 @@ const roleStyles: Record<PlatformUserRole, string> = {
 };
 
 const roleLabels: Record<PlatformUserRole, string> = {
-  company_owner: "Company Admin",
+  company_owner: "Company Owner",
   estimator: "Estimator",
   engineer: "Engineer",
 };

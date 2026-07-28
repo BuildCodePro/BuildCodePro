@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { AuthFooterLink } from "@/components/auth/auth-footer";
@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { routes } from "@/config/routes";
 import { getDashboardPathForRole } from "@/lib/auth/session";
 import { useVerifyEmailChangeMutation } from "@/services/useProfileService";
+import { apiRequest } from "@/lib/queryClient";
+import type { ProfileResponse } from "@/services/useProfileService";
 import { useAuthStore } from "@/store/auth-store";
 import { toast } from "sonner";
-import { useMeQuery } from "@/services/authService";
 
 export function VerifyEmailChangeForm() {
     const router = useRouter();
@@ -25,7 +26,12 @@ export function VerifyEmailChangeForm() {
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const verifyMutation = useVerifyEmailChangeMutation();
-    const { role } = useAuthStore();
+    const { role, accessToken } = useAuthStore();
+    const updateUser = useAuthStore((s) => s.updateUser);
+
+    // Guards against React 18 StrictMode (dev) firing this effect twice,
+    // which would call the verify API twice for the same token.
+    const hasCalledRef = useRef(false);
 
     useEffect(() => {
         if (!token) {
@@ -34,34 +40,69 @@ export function VerifyEmailChangeForm() {
             return;
         }
 
+        if (hasCalledRef.current) return;
+        hasCalledRef.current = true;
+
+        let isMounted = true;
+        let redirectTimeout: ReturnType<typeof setTimeout> | undefined;
+
+        const syncMeIntoStore = async () => {
+            if (!accessToken) return;
+            try {
+                const fresh = await apiRequest<ProfileResponse>("/auth/me");
+                updateUser({
+                    name: fresh.full_name,
+                    email: fresh.email,
+                    avatarUrl: fresh.avatar_url,
+                    companyName: fresh.company_name,
+                    plan: fresh.plan,
+                    modules: fresh.modules,
+                } as any);
+            } catch (error) {
+                console.error("Failed to sync profile after email change:", error);
+            }
+        };
+
         verifyMutation.mutate(
             { token },
             {
-                onSuccess: (response) => {
+                onSuccess: async (response) => {
+                    await syncMeIntoStore();
+
+                    if (!isMounted) return;
+
                     setVerifyStatus("success");
                     setSuccessMessage(response?.message ?? null);
-                    toast.success("Email address updated successfully!");
-
+                    toast.success(response?.message || "Email address updated successfully!");
 
                     const redirectPath = role
                         ? getDashboardPathForRole(role)
                         : routes.login;
 
-                    const timer = setTimeout(() => {
+                    redirectTimeout = setTimeout(() => {
                         router.replace(redirectPath);
                     }, 2000);
-
-                    return () => clearTimeout(timer);
                 },
                 onError: (error: any) => {
+                    if (!isMounted) return;
+
+                    const message =
+                        (error instanceof Error ? error.message : error?.data?.message) ||
+                        error?.message ||
+                        "This link is no longer valid. Please request a new email change from your profile settings.";
+
                     setVerifyStatus("error");
-                    setVerifyError(
-                        error instanceof Error ? error.message : error?.data?.message,
-                    );
-                    toast.error("This verification link has expired or is invalid.");
+                    setVerifyError(message);
+                    toast.error(message);
                 },
             },
         );
+
+        return () => {
+            isMounted = false;
+            if (redirectTimeout) clearTimeout(redirectTimeout);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     if (verifyStatus === "verifying") {

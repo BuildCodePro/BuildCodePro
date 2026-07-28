@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Projector, Upload } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { TabPanel, UnderlineTabs } from "@/components/ui/underline-tabs";
@@ -16,6 +16,7 @@ import type { BomLineItem } from "@/types/bom";
 
 import { BomLineItemsTable } from "./bom-line-items-table";
 import { TableSkeleton } from "../ui/table-skeleton";
+import { TableEmptyState } from "../ui/emptyState";
 
 interface BomMaterialTakeoffPanelProps {
   projectId?: string;
@@ -80,7 +81,7 @@ export function BomMaterialTakeoffPanel({
     return (
       <div className="flex items-center justify-center rounded-[14px] border border-border bg-white py-16">
         <p className="font-body text-sm text-stat-label">
-          No project selected.
+          <TableEmptyState title="No project selected." icon={<Projector className="w-8 h-8" />} />
         </p>
       </div>
     );

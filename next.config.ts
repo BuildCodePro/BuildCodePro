@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     "*.ngrok-free.app",
     "*.ngrok-free.dev",
     "*.ngrok.app",
+    "*.tekxai.com"
   ],
 };
 

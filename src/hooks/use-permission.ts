@@ -24,10 +24,6 @@ interface UseModulePermissionResult {
 export function useModulePermission(): UseModulePermissionResult {
     const { user, role } = useAuthStore();
 
-    // Module gating only applies to company_owner. Every other role
-    // (estimator, engineer, super_admin, etc.) is always allowed —
-    // their access is controlled elsewhere (e.g. by the owner's invite),
-    // not by the subscription plan directly.
     const isRestrictedRole = role === "company_owner";
 
     const modules = (user as any)?.modules as

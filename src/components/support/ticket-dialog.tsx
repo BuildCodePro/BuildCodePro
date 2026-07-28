@@ -11,6 +11,8 @@ import {
   useAddSupportTicketCommentMutation,
   useSupportTicketQuery,
 } from "@/services/supportService";
+import { TableEmptyState } from "../ui/emptyState";
+import { MessageCircle } from "lucide-react";
 
 interface TicketDetailDialogProps {
   ticketId: string | null;
@@ -93,7 +95,7 @@ export function TicketDetailDialog({
             </h4>
             {ticket.comments.length === 0 ? (
               <p className="font-body text-sm text-stat-label">
-                No comments yet.
+                <TableEmptyState title="No comments yet." icon={<MessageCircle className="w-8 h-8" />} />
               </p>
             ) : (
               <div className="flex flex-col gap-3">

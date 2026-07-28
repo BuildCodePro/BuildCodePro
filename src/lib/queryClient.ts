@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 
-export const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://unmaintained-finickily-lenora.ngrok-free.dev/api/v1';
+export const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://buildcapi.tekxai.com/api/v1';
 
 function handleAuthFailure() {
   useAuthStore.getState().clearSession();
@@ -87,6 +87,27 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
   return response;
 }
 
+// Helper: safely parse a response body.
+// Handles 204 No Content and any other empty-body response (e.g. some
+// DELETE/PATCH endpoints) without throwing "Unexpected end of JSON input".
+async function parseResponseBody<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const text = await response.text();
+
+  if (!text) {
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return undefined as T;
+  }
+}
+
 // API helper function
 export async function apiRequest<T>(
   endpoint: string,
@@ -96,11 +117,13 @@ export async function apiRequest<T>(
   const response = await fetchWithAuth(url, options);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
+    const error = await parseResponseBody<{ message?: string }>(response).then(
+      (val) => val ?? { message: 'Request failed' }
+    );
     throw { status: response.status, data: error, message: error.message || 'Request failed' };
   }
 
-  return response.json();
+  return parseResponseBody<T>(response);
 }
 
 // Create QueryClient with default options

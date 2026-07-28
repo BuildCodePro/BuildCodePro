@@ -60,7 +60,12 @@ export function HelpArticlesTable({
     deleteMutation.mutate(pendingDeleteId, {
       onSuccess: () => {
         setPendingDeleteId(null);
+        console.log("Delete");
       },
+      onError: (err: any) => {
+        console.log(err, "error");
+      }
+
     });
   };
 
@@ -160,7 +165,6 @@ export function HelpArticlesTable({
       </Table>
 
       <Modal
-        children
         isOpen={pendingDeleteId !== null}
         onClose={() => setPendingDeleteId(null)}
         title="Delete Article"
@@ -169,6 +173,7 @@ export function HelpArticlesTable({
         cancelText="Cancel"
         onConfirm={handleConfirmDelete}
         isConfirming={deleteMutation.isPending}
+        children={false}
       />
     </div>
   );
