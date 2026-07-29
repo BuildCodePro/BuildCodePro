@@ -34,9 +34,7 @@ export default function BillingSuccessPage() {
       return;
     }
 
-    // Stripe webhook usually updates the subscription slightly after
-    // checkout completes, so we poll a couple of times to give it a
-    // moment to land before showing the final state.
+
     let attempts = 0;
     const maxAttempts = 5;
 
@@ -57,20 +55,12 @@ export default function BillingSuccessPage() {
       if (attempts < maxAttempts) {
         setTimeout(poll, 1500);
       } else {
-        // Even if we can't confirm yet, checkout itself succeeded
-        // (Stripe only redirects here on success), so don't scare the user.
-        // Still try to sync /auth/me in case the plan/modules already
-        // updated server-side even though subscription_status polling
-        // hasn't caught up.
+
         await syncMeIntoStore();
         setStatus("success");
       }
     };
 
-    // Re-fetches /auth/me and pushes the fresh plan + modules into the
-    // persisted auth store, so permission checks (useModulePermission,
-    // sidebar nav, tab gating, etc.) unlock immediately without the
-    // user needing to manually refresh the page.
     const syncMeIntoStore = async () => {
       try {
         const result = await refetchMe();
@@ -83,7 +73,6 @@ export default function BillingSuccessPage() {
     };
 
     poll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   return (
