@@ -29,10 +29,9 @@ export function VerifyEmailChangeForm() {
     const { role, accessToken } = useAuthStore();
     const updateUser = useAuthStore((s) => s.updateUser);
 
-    // Guards against React 18 StrictMode (dev) firing this effect twice,
-    // which would call the verify API twice for the same token.
     const hasCalledRef = useRef(false);
 
+    const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     useEffect(() => {
         if (!token) {
             setVerifyStatus("error");
@@ -42,9 +41,6 @@ export function VerifyEmailChangeForm() {
 
         if (hasCalledRef.current) return;
         hasCalledRef.current = true;
-
-        let isMounted = true;
-        let redirectTimeout: ReturnType<typeof setTimeout> | undefined;
 
         const syncMeIntoStore = async () => {
             if (!accessToken) return;
@@ -69,8 +65,6 @@ export function VerifyEmailChangeForm() {
                 onSuccess: async (response) => {
                     await syncMeIntoStore();
 
-                    if (!isMounted) return;
-
                     setVerifyStatus("success");
                     setSuccessMessage(response?.message ?? null);
                     toast.success(response?.message || "Email address updated successfully!");
@@ -79,15 +73,15 @@ export function VerifyEmailChangeForm() {
                         ? getDashboardPathForRole(role)
                         : routes.login;
 
-                    redirectTimeout = setTimeout(() => {
+                    redirectTimeoutRef.current = setTimeout(() => {
                         router.replace(redirectPath);
                     }, 2000);
                 },
                 onError: (error: any) => {
-                    if (!isMounted) return;
 
                     const message =
-                        (error instanceof Error ? error.message : error?.data?.message) ||
+                        error?.data?.message ||
+                        (error instanceof Error ? error.message : undefined) ||
                         error?.message ||
                         "This link is no longer valid. Please request a new email change from your profile settings.";
 
@@ -99,10 +93,10 @@ export function VerifyEmailChangeForm() {
         );
 
         return () => {
-            isMounted = false;
-            if (redirectTimeout) clearTimeout(redirectTimeout);
+            if (redirectTimeoutRef.current) {
+                clearTimeout(redirectTimeoutRef.current);
+            }
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
     if (verifyStatus === "verifying") {

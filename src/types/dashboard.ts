@@ -6,6 +6,7 @@ export type ProjectStatus =
   | "exported"
   | "ai_complete"
   | "approved"
+  | "change_request"
   | "ready";
 
 export interface DashboardStat {

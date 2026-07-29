@@ -60,6 +60,9 @@ export interface AuthUser {
     name: string;
     created_at: string;
   };
+  plan?: string | null | {
+    name?: string;
+  };
   created_at?: string;
   updated_at?: string;
 }

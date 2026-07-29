@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
         UPDATE_MEMBER: (userId: string) => `/user/team/members/${userId}`,
         DEACTIVATE_MEMBER: (userId: string) => `/user/team/members/${userId}/deactivate`,
         ACTIVATE_MEMBER: (userId: string) => `/user/team/members/${userId}/activate`,
+        GET_ENGINEERS: `/user/engineers`
     },
     DASHBOARD: {
         STATS: '/dashboard/stats',

@@ -181,9 +181,9 @@ export function SecuritySettingsPanel() {
               Couldn&apos;t load active sessions.
             </p>
           ) : sessions.length === 0 ? (
-            <p className="font-body text-sm text-stat-label">
-              <TableEmptyState title="No active sessions found." icon={<Shell className="w-8 h-8" />} />
-            </p>
+            <div className="font-body text-sm text-stat-label">
+              <TableEmptyState title="No active session found." icon={<Shell className="w-8 h-8" />} />
+            </div>
           ) : (
             <ul className="space-y-3">
               {sessions.map((session: any) => (

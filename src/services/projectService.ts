@@ -70,6 +70,24 @@ export interface SendForReviewResponse {
   message?: string;
 }
 
+
+export interface EngineerItem {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface EngineersResponse {
+  items: EngineerItem[];
+}
+
+export interface SendForReviewRequest {
+  engineer_user_id: string;
+}
+
+// export type SendForReviewResponse = ProjectDto;
+
+
 export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardProject {
   return {
     id: project.id,
@@ -136,17 +154,28 @@ const getProjectByIdApi = async (id: string): Promise<ProjectDto> => {
 
 const sendForReviewApi = async (
   projectId: string,
+  payload: SendForReviewRequest,
 ): Promise<SendForReviewResponse> => {
   return apiRequest<SendForReviewResponse>(
     API_ENDPOINTS.PROJECTS.SEND_FOR_REVIEW(projectId),
     {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     },
   );
 };
 
 
-// --- TanStack Query Hooks ---
+// --- Types ---
+
+
+// --- API Function ---
+
+const getEngineersApi = async (): Promise<EngineersResponse> => {
+  return apiRequest<EngineersResponse>(API_ENDPOINTS.TEAM.GET_ENGINEERS);
+};
+
 
 export const useCreateProjectMutation = () => {
   const queryClient = useQueryClient();
@@ -178,29 +207,33 @@ export const useSendForReviewMutation = (projectId?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (payload: SendForReviewRequest) => {
       if (!projectId) {
         throw new Error('Project is missing. Please open a valid project first.');
       }
-      return sendForReviewApi(projectId);
+      return sendForReviewApi(projectId, payload);
     },
     onSuccess: () => {
       if (!projectId) return;
 
-      // Refresh the single project (workflow_status changes to under_review)
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.PROJECTS.DETAIL(projectId),
       });
 
-      // Refresh any project lists (owner/estimator + engineer views)
       queryClient.invalidateQueries({
         queryKey: ['projects', 'list'],
       });
 
-      // Refresh notifications since sending for review triggers one
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.NOTIFICATIONS.LIST(),
       });
     },
+  });
+}
+
+export const useEngineersQuery = () => {
+  return useQuery({
+    queryKey: QUERY_KEYS.TEAM.GET_ENGINEERS,
+    queryFn: getEngineersApi,
   });
 };

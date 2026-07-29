@@ -28,7 +28,7 @@ import type {
 } from "@/types/new-design";
 import { useAnalysisResultQuery } from "@/services/analysisService";
 import { useCreateExportMutation } from "@/services/exportService";
-import { useGetProjectQuery, useSendForReviewMutation } from "@/services/projectService";
+import { useGetProjectQuery, useSendForReviewMutation, useEngineersQuery } from "@/services/projectService";
 import { useModulePermission } from "@/hooks/use-permission";
 import { useState } from "react";
 
@@ -42,6 +42,8 @@ import { ResultsProjectHeader } from "./results-project-header";
 import { UpgradeAccountFallback } from "./upgrade-account-fallback";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils/format-date";
+import { Select, SelectField } from "../ui";
+import { useAuthStore } from "@/store/auth-store"
 
 interface ResultsStepProps {
   projectInfo: ProjectInfoFormData;
@@ -60,10 +62,13 @@ export function ResultsStep({
   const [activeTab, setActiveTab] =
     useState<ResultsTabId>("design-recommendations");
   const [isSendForReviewOpen, setIsSendForReviewOpen] = useState(false);
+  const [selectedEngineerId, setSelectedEngineerId] = useState<string>("");
 
   const createExportMutation = useCreateExportMutation(projectId);
   const sendForReviewMutation = useSendForReviewMutation(projectId);
   const { hasModule } = useModulePermission();
+  const User = useAuthStore();
+
 
   // --- Fetch the single project first, so we know its workflow_status ---
   const {
@@ -71,6 +76,11 @@ export function ResultsStep({
     isLoading: isProjectLoading,
     isError: isProjectError,
   } = useGetProjectQuery(projectId ?? "");
+
+  const { data: engineersData, isLoading: isEngineersLoading } =
+    useEngineersQuery();
+  const engineers = engineersData?.items ?? [];
+  const hasEngineers = engineers.length > 0;
 
   const workflowStatus: string | undefined = projectDetail?.workflow_status;
 
@@ -144,10 +154,18 @@ export function ResultsStep({
       return;
     }
 
+    if (!selectedEngineerId) {
+      toast.error("Please select an engineer to send this project for review.");
+      return;
+    }
+
     try {
-      await sendForReviewMutation.mutateAsync();
+      await sendForReviewMutation.mutateAsync({
+        engineer_user_id: selectedEngineerId,
+      });
       toast.success("Project sent for engineer review.");
       setIsSendForReviewOpen(false);
+      setSelectedEngineerId("");
     } catch (error: any) {
       const message =
         error instanceof Error
@@ -347,11 +365,6 @@ export function ResultsStep({
     );
   }
 
-  if (isProjectError) {
-    // Non-blocking: fall through to normal results view using whatever
-    // `results` prop / analysis query state is available, but let the
-    // user know project status couldn't be confirmed.
-  }
 
   return (
     <div className="space-y-6">
@@ -401,7 +414,10 @@ export function ResultsStep({
         />
       )}
 
-      {canSendForReview ? (
+      {canSendForReview &&
+        (typeof User?.user?.plan === "string"
+          ? User.user.plan === "Enterprise"
+          : User?.user?.plan?.name === "Enterprise") ? (
         <div className="flex justify-end ">
           <Button className="md:max-w-[300px]" onClick={() => setIsSendForReviewOpen(true)}>
             Send for Review
@@ -495,6 +511,7 @@ export function ResultsStep({
         onClose={() => {
           if (!sendForReviewMutation.isPending) {
             setIsSendForReviewOpen(false);
+            setSelectedEngineerId("");
           }
         }}
         title="Send for Engineer Review"
@@ -504,11 +521,41 @@ export function ResultsStep({
         isConfirming={sendForReviewMutation.isPending}
         onConfirm={handleConfirmSendForReview}
       >
-        <p className="text-sm text-stat-label">
-          <span className="font-medium text-foreground">{projectName}</span>{" "}
-          will be sent to the assigned engineer for review. Make sure the
-          design recommendations and BOM look correct before continuing.
-        </p>
+        <div className="space-y-4">
+          <p className="text-sm text-stat-label">
+            <span className="font-medium text-foreground">{projectName}</span>{" "}
+            will be sent to the assigned engineer for review. Make sure the
+            design recommendations and BOM look correct before continuing.
+          </p>
+
+          {isEngineersLoading ? (
+            <div className="h-10 animate-pulse rounded-md bg-slate-100" />
+          ) : hasEngineers ? (
+            <div className="space-y-1.5">
+
+              <SelectField
+                label="Assign Engineer"
+                name="engineerId"
+                value={selectedEngineerId}
+                onChange={setSelectedEngineerId}
+                options={engineers.map((engineer) => ({
+                  value: engineer.id,
+                  label: `${engineer.name} (${engineer.email})`,
+                }))}
+              />
+
+            </div>
+          ) : (
+            <div className="rounded-md border border-dashed border-border bg-surface px-4 py-3 text-sm text-stat-label">
+              No engineers are available on your team yet. Invite an
+              engineer from{" "}
+              <Link href="/company/team" className="text-primary hover:underline">
+                Team Settings
+              </Link>{" "}
+              before sending this project for review.
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );

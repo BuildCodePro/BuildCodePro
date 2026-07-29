@@ -38,8 +38,7 @@ function mapToBillingPlan(plan: Plan, currentPlanCode?: string): BillingPlan {
     designsPerMonth:
       plan.monthly_design_limit === 0 ? "Unlimited" : plan.monthly_design_limit,
     features: mapPlanFeatures(plan),
-    // Bug fix: PlanCard reads `plan.isCurrent`, not `isCurrentPlan` —
-    // this mismatch meant the "Current Plan" state never showed.
+
     isCurrent: plan.code === currentPlanCode,
   } as BillingPlan;
 }
@@ -51,8 +50,6 @@ export function AvailablePlans({
   const plansQuery = usePlansQuery();
   const checkoutMutation = useCheckoutMutation();
 
-  // Track which specific plan is being switched to, so only that
-  // plan's button shows the loading state — not all of them.
   const [pendingPlanCode, setPendingPlanCode] = useState<string | null>(null);
 
   const plans = useMemo(() => {
@@ -73,9 +70,7 @@ export function AvailablePlans({
       {
         onSuccess: (data: any) => {
           window.location.href = data.checkout_url;
-          // Intentionally not clearing pendingPlanCode here — we're
-          // navigating away, so the button should stay disabled/loading
-          // until the redirect actually happens.
+
         },
         onError: () => {
           setPendingPlanCode(null);

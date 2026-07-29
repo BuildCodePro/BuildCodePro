@@ -16,6 +16,7 @@ const badgeVariants = cva(
         processing: "bg-sky-50 text-sky-700",
         draft: "bg-slate-100 text-slate-600",
         ready: "bg-emerald-50 text-emerald-700",
+        change_request: "bg-yellow-50 text-yellow-700"
       },
     },
     defaultVariants: {
@@ -33,6 +34,7 @@ const statusLabels: Record<ProjectStatus, string> = {
   ai_complete: "AI Complete",
   approved: "Approved",
   ready: "Ready",
+  change_request: "Change Request"
 };
 
 interface StatusBadgeProps extends VariantProps<typeof badgeVariants> {

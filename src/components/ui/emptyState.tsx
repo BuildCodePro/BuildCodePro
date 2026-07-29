@@ -19,7 +19,7 @@ export function TableEmptyState({
     return (
         <div
             className={cn(
-                "flex flex-col w-full items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center",
+                "flex flex-col w-full items-center justify-center rounded-xl border border-dashed border-border bg-gray-200 px-6 py-12 text-center",
                 className
             )}
         >
