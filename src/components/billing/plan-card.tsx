@@ -50,7 +50,7 @@ export function PlanCard({
           </span>
         </p>
         <p className="font-body text-sm text-stat-label">
-          {formatDesigns(plan.designsPerMonth)}
+          {formatDesigns(plan.designsPerMonth )}
         </p>
       </div>
 
