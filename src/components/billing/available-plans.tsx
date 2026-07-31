@@ -36,7 +36,7 @@ function mapToBillingPlan(plan: Plan, currentPlanCode?: string): BillingPlan {
     price: plan.amount_cents / 100,
     period: "month",
     designsPerMonth:
-      plan.monthly_design_limit === 0 ? "Unlimited" : plan.monthly_design_limit,
+      plan.monthly_design_limit === null ? "Unlimited" : plan.monthly_design_limit,
     features: mapPlanFeatures(plan),
 
     isCurrent: plan.code === currentPlanCode,
