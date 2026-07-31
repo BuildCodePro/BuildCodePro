@@ -47,7 +47,7 @@ export function PlanUsageBanner({
 
       <div className="flex w-full flex-col gap-4 lg:max-w-xl lg:flex-1 lg:flex-row lg:items-center lg:justify-end lg:gap-6">
         <div className="w-full space-y-2 lg:max-w-sm">
-          {usage.used === 1 && usage.total && (
+          {usage.used !== undefined && usage.total > 0 && (
             <>
               <p className="text-right font-body text-xs text-slate-400">
                 {usage.used} / {usage.total} designs used this month
