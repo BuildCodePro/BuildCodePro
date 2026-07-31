@@ -419,7 +419,7 @@ export function ResultsStep({
           ? User.user.plan === "Enterprise"
           : User?.user?.plan?.name === "Enterprise") ? (
         <div className="flex justify-end ">
-          <Button className="md:max-w-[300px]" onClick={() => setIsSendForReviewOpen(true)}>
+          <Button size={"social"} className="md:max-w-[300px]" onClick={() => setIsSendForReviewOpen(true)}>
             Send for Review
           </Button>
         </div>

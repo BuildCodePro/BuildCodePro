@@ -31,6 +31,14 @@ export interface DashboardProject {
   lastUpdated: string;
   createdAt?: string;
   imageUrl?: string;
+  jurisdiction?: string;
+  square_footage?: number;
+  number_of_floors?: number;
+  sprinkler_system?: boolean;
+  elevator?: boolean;
+  duct_detectors?: boolean;
+  voice_evacuation?: boolean;
+  special_notes?: string;
 }
 
 export interface PlanUsage {

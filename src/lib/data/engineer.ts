@@ -228,16 +228,16 @@ export function mapProjectToProjectInfo(
   return {
     projectName: project.name,
     address: project.address,
-    jurisdiction: "Austin, TX — Travis County",
-    squareFootage: "45,000",
-    numberOfFloors: "3",
+    jurisdiction: project.jurisdiction || "—",
+    squareFootage: project.square_footage ? String(project.square_footage) : "0",
+    numberOfFloors: project.number_of_floors ? String(project.number_of_floors) : "0",
     occupancyType: project.occupancyType,
     optionalSystems: {
-      sprinkler: true,
-      elevator: true,
-      ductDetectors: false,
-      voiceEvacuation: false,
+      sprinkler: Boolean(project.sprinkler_system),
+      elevator: Boolean(project.elevator),
+      ductDetectors: Boolean(project.duct_detectors),
+      voiceEvacuation: Boolean(project.voice_evacuation),
     },
-    specialNotes: "",
+    specialNotes: project.special_notes || "",
   };
 }

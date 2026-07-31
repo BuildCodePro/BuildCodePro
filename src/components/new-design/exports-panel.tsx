@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils/format-date";
 
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { FormField } from "@/components/ui/form-field";
@@ -277,7 +278,7 @@ export function ExportsPanel({ projectInfo, projectId, results }: ExportsPanelPr
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{item.file_name}</p>
                       <p className="text-xs text-stat-label">
-                        {item.format.toUpperCase()} • {new Date(item.created_at).toLocaleString()}
+                        {item.format.toUpperCase()} • {formatDate(item.created_at)}
                       </p>
                     </div>
                     {item.recipient_email ? (

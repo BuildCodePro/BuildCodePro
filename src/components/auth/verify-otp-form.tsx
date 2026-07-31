@@ -73,10 +73,12 @@ export function VerifyOtpForm() {
       return;
     }
 
+    const rememberMe = searchParams.get("remember_me") === "true";
+
     const data: VerifyOTPDto = {
       email,
       otp_code: otpCode.trim(),
-      remember_me: false,
+      remember_me: rememberMe,
     };
 
     verifyOtp(data, {

@@ -99,6 +99,14 @@ export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardP
     workflow_status: project.workflow_status,
     lastUpdated: project.updated_at,
     createdAt: project.created_at,
+    jurisdiction: project.jurisdiction,
+    square_footage: project.square_footage,
+    number_of_floors: project.number_of_floors,
+    sprinkler_system: project.sprinkler_system,
+    elevator: project.elevator,
+    duct_detectors: project.duct_detectors,
+    voice_evacuation: project.voice_evacuation,
+    special_notes: project.special_notes,
   };
 }
 

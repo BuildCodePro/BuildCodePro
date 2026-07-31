@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { routes } from "@/config/routes";
 import { cn } from "@/lib/utils/cn";
 import type { DashboardProject } from "@/types/dashboard";
+import { formatDate } from "@/lib/utils/format-date";
 
 const PROJECT_IMAGE_FALLBACK = "/images/brand-panel.png";
 
@@ -52,7 +53,7 @@ export function ProjectCard({
             {project.address}
           </p>
           <p className="truncate font-body text-xs text-stat-label">
-            {project.occupancyType} • {displayDate}
+            {project.occupancyType} • {formatDate(displayDate)}
           </p>
         </div>
       </div>

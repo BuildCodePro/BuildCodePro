@@ -19,6 +19,7 @@ import {
 import { getEngineerReviewRecord } from "@/lib/data/engineer";
 import type { DashboardProject } from "@/types/dashboard";
 import type { ProjectDetailTabId } from "@/types/project-details";
+import { formatDate } from "@/lib/utils/format-date";
 
 interface ProjectDetailsContentProps {
   project: DashboardProject;
@@ -54,7 +55,7 @@ export function ProjectDetailsContent({
           </div>
           <p className="font-body text-sm text-stat-label">
             {project.address} &bull; {project.occupancyType} &bull; Last
-            updated {project.lastUpdated}
+            updated {formatDate(project.lastUpdated)}
           </p>
         </div>
       </div>

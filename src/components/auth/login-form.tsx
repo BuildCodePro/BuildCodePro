@@ -59,7 +59,17 @@ export function LoginForm() {
       },
       {
         onSuccess: (data) => {
-          router.push(`${routes.verifyOtp}?email=${encodeURIComponent(formData.email)}&flow=login`);
+          if (!data?.requires_otp) {
+            const raw = data?.payload ?? data?.data ?? data;
+            const directRole = (data as any)?.role ?? raw?.role ?? raw?.user?.role ?? raw?.user?.roleName ?? useAuthStore.getState().role;
+            const destination = directRole
+              ? ROLE_REDIRECT_MAP[directRole as string] ?? "/dashboard"
+              : "/dashboard";
+            router.replace(destination);
+            toast.success("Login Successfully");
+            return;
+          }
+          router.push(`${routes.verifyOtp}?email=${encodeURIComponent(formData.email)}&flow=login&remember_me=${formData.rememberMe}`);
           toast.success("OTP sent on your email successfully")
           return;
         },

@@ -10,7 +10,6 @@ import {
 import { useUploadDrawingMutation } from "@/services/drawingService";
 import { useStartAnalysisMutation } from "@/services/analysisService";
 
-import { AlertBanner } from "@/components/ui/alert-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -255,6 +254,18 @@ export function DesignWizard() {
       localStorage.setItem("buildcodepro_wizard_projectId", projectId);
     }
   }, [projectId]);
+
+  // Clear the local storage draft when the user navigates away (component unmounts).
+  // Note: This does NOT run on browser refresh, so refresh preserves the draft,
+  // but navigating to Dashboard and back will start a fresh design.
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("buildcodepro_wizard_projectInfo");
+        localStorage.removeItem("buildcodepro_wizard_projectId");
+      }
+    };
+  }, []);
 
   const projectChecklist = useMemo(
     () => getProjectInfoChecklistState(projectInfo),

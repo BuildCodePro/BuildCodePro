@@ -20,10 +20,10 @@ export function BillingContent() {
     return {
       planName: sub.plan_name,
       priceLabel: sub.plan_code,
-      designsLabel: `${sub.monthly_designs_used} / ${sub.monthly_design_limit === 0 ? "Unlimited" : sub.monthly_design_limit
+      designsLabel: `${sub.monthly_designs_used} / ${sub.monthly_design_limit === null ? "Unlimited" : sub.monthly_design_limit
         } designs`,
       used: sub.monthly_designs_used,
-      total: sub.monthly_design_limit === 0 ? sub.monthly_designs_used || 1 : sub.monthly_design_limit,
+      total: sub.monthly_design_limit === 0 ? sub.monthly_designs_used || 0 : sub.monthly_design_limit,
     };
   }, [subscriptionQuery.data]);
 

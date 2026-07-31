@@ -143,10 +143,7 @@ export function EngineerReviewPanel({
     );
   };
 
-  // FIX: reads the live textarea value at click-time (not a possibly-stale
-  // closure) and, if it differs from what's already saved, persists it
-  // first — so Approve/Request Changes always submits the exact notes
-  // the user currently sees, regardless of blur timing/race conditions.
+
   const getConfirmedNotes = async (): Promise<string> => {
     const currentNotes = notes;
 

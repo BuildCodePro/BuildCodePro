@@ -74,13 +74,9 @@ export function AiAnalysisStep({
   const [targetTasks, setTargetTasks] = useState<AnalysisTaskState[]>([]);
   const [displayTasks, setDisplayTasks] = useState<AnalysisTaskState[]>([]);
 
-  // Tracks the actual lifecycle state of the analysis job so we know
-  // whether Retry / Cancel should be enabled. Starts as "running" since
-  // a job_id means an analysis was just kicked off.
   const [analysisStatus, setAnalysisStatus] =
     useState<AnalysisLifecycleStatus>("running");
 
-  // Reset lifecycle status whenever a new job starts (e.g. after retry).
   useEffect(() => {
     if (jobId) {
       setAnalysisStatus("running");
@@ -209,9 +205,6 @@ export function AiAnalysisStep({
           "Failed to retry analysis. Please try again.",
         );
 
-        // Backend told us this job can't be retried right now (e.g. it's
-        // still running or already completed) — surface that clearly and
-        // make sure our local status doesn't claim otherwise.
         if (payload?.error_code === "ANALYSIS_NOT_RETRYABLE") {
           toast.error(message);
           return;
