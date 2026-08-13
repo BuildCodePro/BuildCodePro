@@ -735,6 +735,8 @@ export function ResultsStep({
   const hasEngineers = engineers.length > 0;
   const isDraftWorkflow = projectData?.workflow_status === "draft";
 
+  const { data: jobsData } = useAnalysisJobsQuery(projectId || "");
+
   const latestResultQuery = useAnalysisResultQuery(selectedJobId ? null : projectId);
   const jobResultQuery = useAnalysisJobResultQuery(selectedJobId ? projectId : null, selectedJobId);
 
@@ -1027,8 +1029,6 @@ export function ResultsStep({
   }
 
 
-  const { data: jobsData } = useAnalysisJobsQuery(projectId || "");
-
   const activeJob = selectedJobId
     ? jobsData?.items.find((j) => j.id === selectedJobId)
     : jobsData?.items[0];
@@ -1200,6 +1200,7 @@ export function ResultsStep({
               labelledBy="tab-design-recommendations"
             >
               <DesignRecommendationsPanel
+                drawings={analysisResult?.drawings}
                 design_image={drawingImage}
                 recommendations={recommendations}
               />

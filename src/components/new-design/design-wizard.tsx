@@ -21,6 +21,7 @@ import {
   type UploadedFile,
 } from "@/types/new-design";
 import { getAnalysisJobsApi } from "@/services/analysisService";
+import { getDynamicErrorMessage } from "@/lib/utils/error-handler";
 
 import { AnalysisChecklist } from "./analysis-checklist";
 import { AiAnalysisStep } from "./ai-analysis-step";
@@ -602,8 +603,7 @@ export function DesignWizard() {
           }
         } catch (error: any) {
           console.error("[Design Wizard] Bulk presign/upload failed:", error);
-          const message =
-            error instanceof Error ? error.message : (error?.data?.message ?? "Upload failed");
+          const message = getDynamicErrorMessage(error, "Upload failed");
           setFiles((prev) =>
             prev.map((f) =>
               filesToUpload.some((fu) => fu.id === f.id)

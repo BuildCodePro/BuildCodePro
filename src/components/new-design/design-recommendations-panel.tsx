@@ -1,22 +1,22 @@
 import type { DesignRecommendation } from "@/types/new-design";
-
+import type { Drawing } from "@/services/analysisService";
 import { FloorPlanPreview } from "./floor-plan-preview";
 import { RecommendationCardList } from "./recommendation-card";
 
 interface DesignRecommendationsPanelProps {
   recommendations: DesignRecommendation[];
   design_image?: string;
+  drawings?: Drawing[];
 }
 
 export function DesignRecommendationsPanel({
   recommendations,
   design_image,
+  drawings,
 }: DesignRecommendationsPanelProps) {
-  console.log("recommendations", recommendations);
-  console.log("design_image", design_image);
   return (
     <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-      <FloorPlanPreview design_image={design_image} />
+      <FloorPlanPreview design_image={design_image} drawings={drawings} />
 
       <div className="space-y-4">
         <div>

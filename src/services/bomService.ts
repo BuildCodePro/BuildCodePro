@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "./api/endpoints";
 import { QUERY_KEYS } from "./api/keys";
@@ -37,19 +37,52 @@ export interface BomResponse {
     updated_at: string;
 }
 
-// --- API Function ---
+export interface UpdateBomLinePricePayload {
+    company_unit_price: number;
+}
+
+// --- API Functions ---
 
 const getBomApi = async (projectId: string): Promise<BomResponse> => {
     return apiRequest<BomResponse>(API_ENDPOINTS.PROJECTS.BOM.GET(projectId));
 };
 
-
-
+export const updateBomLinePriceApi = async (
+    projectId: string,
+    lineId: string,
+    payload: UpdateBomLinePricePayload
+): Promise<BomLineItem> => {
+    return apiRequest<BomLineItem>(
+        API_ENDPOINTS.PROJECTS.BOM.UPDATE_LINE_PRICE(projectId, lineId),
+        {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+        }
+    );
+};
 
 export const useBomQuery = (projectId: string | null | undefined) => {
     return useQuery({
         queryKey: QUERY_KEYS.PROJECTS.BOM.GET(projectId as string),
         queryFn: () => getBomApi(projectId as string),
         enabled: !!projectId,
+    });
+};
+
+export const useUpdateBomLinePriceMutation = (projectId: string) => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            lineId,
+            payload,
+        }: {
+            lineId: string;
+            payload: UpdateBomLinePricePayload;
+        }) => updateBomLinePriceApi(projectId, lineId, payload),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.PROJECTS.BOM.GET(projectId),
+            });
+        },
     });
 };

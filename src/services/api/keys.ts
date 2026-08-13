@@ -43,6 +43,7 @@ export const QUERY_KEYS = {
         },
         BOM: {
             GET: (projectId: string) => ["projects", projectId, "bom"] as const,
+            UPDATE_LINE_PRICE: (projectId: string, lineId: string) => ["projects", projectId, "bom", "lines", lineId] as const,
         },
 
         EXPORTS: {

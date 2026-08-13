@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ExternalLink,
   Maximize2,
   Minus,
   Plus,
@@ -381,6 +382,39 @@ function PlanViewport({
   };
 
   const fitted = getFittedImageSize(viewportSize);
+
+  const isPdf = design_image
+    ? (design_image.toLowerCase().includes(".pdf") || design_image.toLowerCase().includes("application/pdf"))
+    : false;
+
+  if (isPdf && design_image) {
+    return (
+      <div
+        className={cn(
+          "relative overflow-hidden bg-slate-900 flex flex-col",
+          fullscreen ? "absolute inset-0" : "min-h-[360px] h-[480px] rounded-[12px] border border-border"
+        )}
+      >
+        <iframe
+          src={design_image}
+          title="PDF Drawing Document Preview"
+          className="w-full flex-1 border-0 bg-white"
+        />
+        <div className="flex items-center justify-between bg-slate-950 px-4 py-2 text-xs text-white shrink-0">
+          <span>PDF Document View</span>
+          <a
+            href={design_image}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            Open Document in New Tab
+            <ExternalLink className="size-3.5" />
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

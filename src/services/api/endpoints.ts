@@ -68,6 +68,7 @@ export const API_ENDPOINTS = {
         },
         BOM: {
             GET: (projectId: string) => `/projects/${projectId}/bom`,
+            UPDATE_LINE_PRICE: (projectId: string, lineId: string) => `/projects/${projectId}/bom/lines/${lineId}`,
         },
 
         EXPORTS: {

@@ -34,6 +34,12 @@ export function UploadedFileItem({ file, onRemove }: UploadedFileItemProps) {
           </span>
         ) : null}
 
+        {file.status === "error" ? (
+          <span className="inline-flex items-center gap-1 font-body text-xs font-medium text-red-600">
+            {file.errorMessage || "Upload failed"}
+          </span>
+        ) : null}
+
         {onRemove ? (
           <button
             type="button"

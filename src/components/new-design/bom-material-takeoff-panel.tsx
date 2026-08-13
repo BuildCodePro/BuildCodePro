@@ -11,7 +11,9 @@ import {
   type BomCategoryId,
 } from "@/lib/constants/bom";
 import { cn } from "@/lib/utils/cn";
-import { useBomQuery } from "@/services/bomService";
+import { toast } from "sonner";
+import { useBomQuery, useUpdateBomLinePriceMutation } from "@/services/bomService";
+import { getDynamicErrorMessage } from "@/lib/utils/error-handler";
 import type { BomLineItem } from "@/types/bom";
 
 import { BomLineItemsTable } from "./bom-line-items-table";
@@ -40,12 +42,23 @@ export function BomMaterialTakeoffPanel({
   const [activeCategory, setActiveCategory] =
     useState<BomCategoryId>("all");
 
-
-
   const { data: bom, isLoading, isError, error } = useBomQuery(projectId);
+  const updatePriceMutation = useUpdateBomLinePriceMutation(projectId || "");
 
-
-
+  const handleUpdatePrice = async (lineId: string, companyUnitPrice: number) => {
+    if (!projectId) return;
+    try {
+      await updatePriceMutation.mutateAsync({
+        lineId,
+        payload: { company_unit_price: companyUnitPrice },
+      });
+      toast.success("Unit price updated successfully");
+    } catch (err: any) {
+      const msg = getDynamicErrorMessage(err, "Failed to update unit price");
+      toast.error(msg);
+      throw err;
+    }
+  };
 
   const allLines: BomLineItem[] = bom?.lines ?? [];
   const currency = bom?.currency ?? "USD";
@@ -100,7 +113,7 @@ export function BomMaterialTakeoffPanel({
           Bill of materials not found.
         </p>
         <p className="font-body text-xs text-stat-label">
-          {error instanceof Error ? error.message : "Please try again."}
+          {getDynamicErrorMessage(error, "Please try again.")}
         </p>
       </div>
     );
@@ -115,29 +128,6 @@ export function BomMaterialTakeoffPanel({
             Project total: {totalItemCount.toLocaleString("en-US")} items
           </p>
         </div>
-
-        {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 max-w-none gap-2 px-5"
-            onClick={onExportCsv}
-          >
-            <Download className="size-4" aria-hidden="true" />
-            Export CSV
-          </Button>
-          <button
-            type="button"
-            onClick={onIncludeInPdf}
-            className={cn(
-              buttonVariants({ variant: "primary" }),
-              "h-11 max-w-none gap-2 px-5",
-            )}
-          >
-            <Upload className="size-4" aria-hidden="true" />
-            Include in PDF
-          </button>
-        </div> */}
       </div>
 
       <UnderlineTabs
@@ -154,7 +144,11 @@ export function BomMaterialTakeoffPanel({
         id={`tabpanel-bom-${activeCategory}`}
         labelledBy={`tab-${activeCategory}`}
       >
-        <BomLineItemsTable items={categoryItems} currency={currency} />
+        <BomLineItemsTable
+          items={categoryItems}
+          currency={currency}
+          onUpdatePrice={handleUpdatePrice}
+        />
       </TabPanel>
     </div>
   );
