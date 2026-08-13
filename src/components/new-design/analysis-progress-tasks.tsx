@@ -2,8 +2,6 @@ import { Check } from "lucide-react";
 
 import { cn } from "@/lib/utils/cn";
 
-// Matches the status vocabulary the backend actually sends in each
-// WS event's `steps` array: { key, label, status: "pending" | "in_progress" | "completed" }
 export type AnalysisStepStatus = "pending" | "in_progress" | "completed";
 
 export interface AnalysisStepTask {

@@ -4,12 +4,6 @@ import { API_ENDPOINTS } from "./api/endpoints";
 import { useQuery as useQueryAlias } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./api/keys";
 
-// --- Types ---
-
-
-
-// --- Types ---
-
 export interface AnalysisStats {
     suggested_devices: number;
     suggested_devices_label: string;

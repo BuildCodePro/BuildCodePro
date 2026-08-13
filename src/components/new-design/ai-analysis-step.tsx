@@ -154,26 +154,33 @@ export function AiAnalysisStep({
     );
 
     /**
-     * -------------------------------------------------------
-     * 1. Steps array from backend
-     * -------------------------------------------------------
+     * Backend explicitly reported failure.
      *
-     * Example:
-     *
-     * {
-     *   steps: [
-     *     {
-     *       key: "upload",
-     *       label: "Uploading drawings",
-     *       status: "completed"
-     *     },
-     *     {
-     *       key: "analysis",
-     *       label: "Analyzing drawings",
-     *       status: "in_progress"
-     *     }
-     *   ]
-     * }
+     * IMPORTANT:
+     * Do not let failed progress_pct: 0 make the UI
+     * visually jump back to 0%.
+     */
+    if (event.status === "failed") {
+      setAnalysisStatus("failed");
+
+      /**
+       * Keep the last successful progress value.
+       *
+       * Do NOT update progress here because the backend
+       * sends progress_pct: 0 on failure.
+       */
+
+      /**
+       * If backend sends "failed" as current_step,
+       * don't create a task called "failed".
+       */
+      return;
+    }
+
+    /**
+     * -------------------------------------------------------
+     * Steps array
+     * -------------------------------------------------------
      */
     if (
       Array.isArray(event.steps) &&
@@ -198,13 +205,8 @@ export function AiAnalysisStep({
 
     /**
      * -------------------------------------------------------
-     * 2. Single current step
+     * Current step / step
      * -------------------------------------------------------
-     *
-     * Supports both:
-     *
-     * current_step
-     * step
      */
     const label = (
       event.current_step ??
@@ -212,52 +214,44 @@ export function AiAnalysisStep({
       ""
     ).trim();
 
-    if (label) {
-      setTargetTasks((prev) => {
-        /**
-         * Same step received again.
-         * Don't create duplicate task.
-         */
-        if (
-          prev.length > 0 &&
-          prev[prev.length - 1].label === label
-        ) {
-          return prev;
-        }
-
-        /**
-         * New step:
-         *
-         * previous active step → completed
-         * new step → active
-         */
-        return [
-          ...prev.map((task) => ({
-            ...task,
-            status: "completed" as const,
-          })),
-          {
-            id: `${prev.length}-${label}`,
-            label,
-            status: "active" as const,
-          },
-        ];
-      });
+    /**
+     * Don't create a task named "failed".
+     */
+    if (
+      !label ||
+      label.toLowerCase() === "failed"
+    ) {
+      return;
     }
 
-    /**
-     * IMPORTANT:
-     *
-     * Do NOT return early for events without a step.
-     *
-     * Events containing only:
-     *
-     * progress_pct
-     * message
-     * status
-     *
-     * are still valid and are handled by the WebSocket hook.
-     */
+    setTargetTasks((prev) => {
+      /**
+       * Same step received again.
+       */
+      if (
+        prev.length > 0 &&
+        prev[prev.length - 1].label === label
+      ) {
+        return prev;
+      }
+
+      /**
+       * Previous active step → completed.
+       * New step → active.
+       */
+      return [
+        ...prev.map((task) => ({
+          ...task,
+          status: "completed" as const,
+        })),
+
+        {
+          id: `${prev.length}-${label}`,
+          label,
+          status: "active" as const,
+        },
+      ];
+    });
   };
 
   /**

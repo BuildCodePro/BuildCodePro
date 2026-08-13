@@ -1,6 +1,6 @@
 import { CreditCard } from "lucide-react";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils/cn";
 import { usePortalMutation } from "@/services/billingService";
@@ -46,17 +46,16 @@ export function PaymentMethodCard({
         </div>
       </div>
 
-      <button
+      <Button
+        variant="primary"
         type="button"
+        size={"sm"}
         onClick={handleUpdate}
         disabled={portalMutation.isPending}
-        className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "h-10 w-full max-w-none rounded-[10px] px-5 sm:w-auto disabled:opacity-60",
-        )}
+        className="w-full sm:w-auto cursor-pointer"
       >
         {portalMutation.isPending ? "Opening..." : "Update Card"}
-      </button>
+      </Button>
     </Card>
   );
 }

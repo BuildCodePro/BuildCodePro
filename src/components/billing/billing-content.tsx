@@ -39,9 +39,9 @@ export function BillingContent() {
 
   return (
     <div className="flex w-full flex-col gap-6">
-      {usage ? (
+      {/* {usage ? (
         <PlanUsageBanner usage={usage} onUpgrade={handleUpgradeClick} />
-      ) : null}
+      ) : null} */}
       <PaymentMethodCard paymentMethod={PAYMENT_METHOD} />
       <div id="available-plans">
         <AvailablePlans currentPlanCode={planCode} />
