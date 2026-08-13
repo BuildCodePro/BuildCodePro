@@ -4,7 +4,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
 import type { Drawing } from "@/services/analysisService";
 import { FloorPlanViewer } from "./floor-plan-viewer";
-import { FileText, Image as ImageIcon } from "lucide-react";
+import { FileText, Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FloorPlanPreviewProps {
   className?: string;
@@ -22,7 +22,7 @@ export function FloorPlanPreview({ className, design_image, drawings }: FloorPla
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2">
         <div>
           <h3 className="font-heading text-base font-semibold text-accent-cyan">
             Floor Plan Preview
@@ -33,33 +33,53 @@ export function FloorPlanPreview({ className, design_image, drawings }: FloorPla
         </div>
 
         {drawings && drawings.length > 1 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {drawings.map((doc) => {
-              const isSelected = (selectedDrawingId || drawings[0].id) === doc.id;
-              const isPdf = doc.content_type?.includes("pdf") || doc.file_name?.endsWith(".pdf");
+          <div className="flex items-center justify-center gap-3 rounded-full border border-border bg-background px-3 py-1.5 shadow-sm">
+            <button
+              type="button"
+              onClick={() => {
+                const currentIndex = drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id);
+                if (currentIndex > 0) setSelectedDrawingId(drawings[currentIndex - 1].id);
+              }}
+              disabled={drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) === 0}
+              className="p-0.5 text-stat-label transition-colors hover:text-primary disabled:opacity-30"
+              aria-label="Previous drawing"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
 
-              return (
-                <button
-                  key={doc.id}
-                  type="button"
-                  onClick={() => setSelectedDrawingId(doc.id)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors border",
-                    isSelected
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-background text-stat-label hover:text-foreground"
-                  )}
-                  title={doc.file_name}
-                >
-                  {isPdf ? (
-                    <FileText className="size-3.5" />
-                  ) : (
-                    <ImageIcon className="size-3.5" />
-                  )}
-                  <span className="max-w-[120px] truncate">{doc.file_name}</span>
-                </button>
-              );
-            })}
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              {(() => {
+                const isPdf = activeDrawing?.content_type?.includes("pdf") || activeDrawing?.file_name?.endsWith(".pdf");
+                return (
+                  <>
+                    {isPdf ? (
+                      <FileText className="size-3.5 text-primary" />
+                    ) : (
+                      <ImageIcon className="size-3.5 text-primary" />
+                    )}
+                    <span className="max-w-[150px] truncate" title={activeDrawing?.file_name}>
+                      {activeDrawing?.file_name}
+                    </span>
+                    <span className="text-xs font-normal text-stat-label">
+                      ({drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) + 1}/{drawings.length})
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const currentIndex = drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id);
+                if (currentIndex < drawings.length - 1) setSelectedDrawingId(drawings[currentIndex + 1].id);
+              }}
+              disabled={drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) === drawings.length - 1}
+              className="p-0.5 text-stat-label transition-colors hover:text-primary disabled:opacity-30"
+              aria-label="Next drawing"
+            >
+              <ChevronRight className="size-4" />
+            </button>
           </div>
         ) : null}
       </div>
