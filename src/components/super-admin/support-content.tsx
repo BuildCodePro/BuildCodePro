@@ -133,7 +133,7 @@ export function SupportContent() {
 
       {isStatsError ? (
         <div className="rounded-[16px] border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          Failed to load support stats.
+          Support stats not found.
         </div>
       ) : (
         <StatsGrid stats={stats} />
@@ -166,7 +166,7 @@ export function SupportContent() {
 
       {isTicketsError ? (
         <div className="rounded-[16px] border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          Failed to load support tickets. Please try again.
+          Ticket details not found.
         </div>
       ) : (
         <SupportTicketsTable

@@ -1,15 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "./api/endpoints";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery as useQueryAlias } from "@tanstack/react-query";
 import { QUERY_KEYS } from "./api/keys";
 
 // --- Types ---
 
-export interface StartAnalysisResponse {
-    job_id: string;
-    message: string;
-}
 
 
 // --- Types ---
@@ -72,21 +68,50 @@ export interface AnalysisResultResponse {
     recommendations: AnalysisRecommendations;
     bom_summary: AnalysisBomSummary;
     total_cost: number;
+    /** True when the BOM figures belong to this job; false when a newer job
+     *  has overwritten the project-level BOM singleton. */
+    bom_current: boolean;
 }
 
+// --- Job list types ---
 
+export type AnalysisJobStatus =
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled";
 
-// --- API Function ---
+export interface AnalysisJobItem {
+    id: string;
+    project_id: string;
+    status: AnalysisJobStatus;
+    current_step: string | null;
+    progress_pct: number;
+    error_message: string | null;
+    pages_total: number | null;
+    pages_processed: number | null;
+    created_at: string;
+    updated_at: string;
+    completed_at: string | null;
+}
 
-// --- API Function ---
+export interface AnalysisJobListResponse {
+    items: AnalysisJobItem[];
+    total: number;
+}
 
-const startAnalysisApi = async (projectId: string): Promise<StartAnalysisResponse> => {
-    return apiRequest<StartAnalysisResponse>(API_ENDPOINTS.PROJECTS.ANALYSIS.START(projectId), {
-        method: "POST",
-    });
+// --- API Functions ---
+
+const getAnalysisJobApi = async (
+    projectId: string,
+    jobId: string,
+): Promise<AnalysisJobItem> => {
+    return apiRequest<AnalysisJobItem>(
+        API_ENDPOINTS.PROJECTS.ANALYSIS.JOB_DETAIL(projectId, jobId),
+    );
 };
 
-// --- TanStack Query Hook ---
 const getAnalysisResultApi = async (
     projectId: string,
 ): Promise<AnalysisResultResponse> => {
@@ -95,12 +120,35 @@ const getAnalysisResultApi = async (
     );
 };
 
-export const useStartAnalysisMutation = () => {
-    return useMutation({
-        mutationFn: startAnalysisApi,
-    });
+export const getAnalysisJobsApi = async (
+    projectId: string,
+): Promise<AnalysisJobListResponse> => {
+    return apiRequest<AnalysisJobListResponse>(
+        API_ENDPOINTS.PROJECTS.ANALYSIS.JOBS_LIST(projectId),
+    );
 };
 
+const getAnalysisJobResultApi = async (
+    projectId: string,
+    jobId: string,
+): Promise<AnalysisResultResponse> => {
+    return apiRequest<AnalysisResultResponse>(
+        API_ENDPOINTS.PROJECTS.ANALYSIS.JOB_RESULT(projectId, jobId),
+    );
+};
+
+// --- TanStack Query Hooks ---
+
+export const useAnalysisJobQuery = (
+    projectId: string | null | undefined,
+    jobId: string | null | undefined,
+) => {
+    return useQuery({
+        queryKey: QUERY_KEYS.PROJECTS.ANALYSIS.JOB_DETAIL(projectId as string, jobId as string),
+        queryFn: () => getAnalysisJobApi(projectId as string, jobId as string),
+        enabled: !!projectId && !!jobId,
+    });
+};
 
 export const useAnalysisResultQuery = (
     projectId: string | null | undefined,
@@ -109,5 +157,28 @@ export const useAnalysisResultQuery = (
         queryKey: QUERY_KEYS.PROJECTS.ANALYSIS.RESULT(projectId as string),
         queryFn: () => getAnalysisResultApi(projectId as string),
         enabled: !!projectId,
+    });
+};
+
+export const useAnalysisJobsQuery = (
+    projectId: string | null | undefined,
+    options?: { refetchInterval?: number | false | ((query: any) => number | false | undefined) }
+) => {
+    return useQueryAlias({
+        queryKey: QUERY_KEYS.PROJECTS.ANALYSIS.JOBS(projectId as string),
+        queryFn: () => getAnalysisJobsApi(projectId as string),
+        enabled: !!projectId,
+        ...options,
+    });
+};
+
+export const useAnalysisJobResultQuery = (
+    projectId: string | null | undefined,
+    jobId: string | null | undefined,
+) => {
+    return useQueryAlias({
+        queryKey: QUERY_KEYS.PROJECTS.ANALYSIS.JOB_RESULT(projectId as string, jobId as string),
+        queryFn: () => getAnalysisJobResultApi(projectId as string, jobId as string),
+        enabled: !!projectId && !!jobId,
     });
 };

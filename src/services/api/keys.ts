@@ -32,10 +32,12 @@ export const QUERY_KEYS = {
                 ['projects', projectId, 'drawings', 'detail', drawingId] as const,
         },
         ANALYSIS: {
-            START: (projectId: string) => ['projects', projectId, 'analysis', 'start'] as const,
             CANCEL: (projectId: string, jobId: string) => ['projects', projectId, jobId, 'analysis', 'cancel'] as const,
             RETRY: (projectId: string, jobId: string) => ['projects', projectId, jobId, 'analysis', 'retry'] as const,
             RESULT: (projectId: string) => ['projects', projectId, 'analysis', 'result'] as const,
+            JOBS: (projectId: string) => ['projects', projectId, 'analysis', 'jobs'] as const,
+            JOB_DETAIL: (projectId: string, jobId: string) => ['projects', projectId, 'analysis', 'jobs', jobId] as const,
+            JOB_RESULT: (projectId: string, jobId: string) => ['projects', projectId, 'analysis', 'jobs', jobId, 'result'] as const,
             COMPLIANCE: (projectId: string) => ['projects', projectId, 'analysis', 'compliance'] as const,
             NARRATIVE: (projectId: string) => ['projects', projectId, 'analysis', 'narrative'] as const,
         },
@@ -82,6 +84,7 @@ export const QUERY_KEYS = {
             ['admin', 'users', params ?? {}] as const,
         ACTIVITY: (params?: Record<string, unknown>) =>
             ['admin', 'activity', params ?? {}] as const,
+        LLM_SETTINGS: ['admin', 'llm-settings'] as const,
 
         SUPPORT: {
             ARTICLES: (params?: {

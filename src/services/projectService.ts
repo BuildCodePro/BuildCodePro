@@ -42,6 +42,7 @@ export interface ProjectDto {
   display_status: ProjectStatus;
   workflow_status: ProjectStatus;
   engineer_review_status?: string;
+  current_step?: string;
   created_at: string;
   updated_at: string;
   engineer_notes: string;
@@ -107,6 +108,7 @@ export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardP
     duct_detectors: project.duct_detectors,
     voice_evacuation: project.voice_evacuation,
     special_notes: project.special_notes,
+    current_step: project.current_step,
   };
 }
 

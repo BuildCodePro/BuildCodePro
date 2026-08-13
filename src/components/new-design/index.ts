@@ -25,3 +25,4 @@ export { ProjectInfoStep } from "./project-info-step";
 export { UploadedFileItem, UploadedFileList } from "./uploaded-file-list";
 export { WizardBackButton, WizardSectionHeader } from "./wizard-navigation";
 export { WizardFooter } from "./wizard-footer";
+export { JobsHistoryPanel } from "./jobs-history-panel";

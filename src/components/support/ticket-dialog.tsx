@@ -71,7 +71,7 @@ export function TicketDetailDialog({
         </p>
       ) : isError || !ticket ? (
         <p className="py-8 text-center font-body text-sm text-destructive">
-          Failed to load ticket details.
+          Ticket details not found.
         </p>
       ) : (
         <div className="space-y-4">

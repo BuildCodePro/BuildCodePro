@@ -23,6 +23,7 @@ export const routes = {
     subscriptions: "/super-admin/subscriptions",
     support: "/super-admin/support",
     notification: "/super-admin/notifications",
+    llmSettings: "/super-admin/llm-settings",
   },
   estimator: {
     dashboard: "/estimator",
@@ -35,6 +36,7 @@ export const routes = {
   engineer: {
     dashboard: "/engineer",
     projects: "/engineer/projects",
+    projectJobs: (id: string) => `/engineer/projects/${id}/jobs`,
     settings: "/engineer/settings",
     support: "/engineer/support",
     // notification: "/engineer/notifications",

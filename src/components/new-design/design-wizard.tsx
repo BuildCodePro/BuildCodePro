@@ -1,18 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import {
-  useCreateProjectMutation,
-  useGetProjectQuery,
-} from "@/services/projectService";
-import { useUploadDrawingMutation } from "@/services/drawingService";
-import { useStartAnalysisMutation } from "@/services/analysisService";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
+import { useCreateProjectMutation, useGetProjectQuery } from "@/services/projectService";
+import { useBulkPresignUploadMutation, useBulkCompleteMutation } from "@/services/drawingService";
 import {
   DESIGN_WIZARD_STEPS,
   INITIAL_CHECKLIST_ITEMS,
@@ -28,6 +20,7 @@ import {
   type ProjectInfoFormData,
   type UploadedFile,
 } from "@/types/new-design";
+import { getAnalysisJobsApi } from "@/services/analysisService";
 
 import { AnalysisChecklist } from "./analysis-checklist";
 import { AiAnalysisStep } from "./ai-analysis-step";
@@ -37,6 +30,23 @@ import { ProjectInfoStep } from "./project-info-step";
 import { ResultsStep } from "./results-step";
 import { WizardBackButton } from "./wizard-navigation";
 import { WizardFooter } from "./wizard-footer";
+import { Button, Card, CardContent } from "../ui";
+
+// ---------------------------------------------------------------------------
+// localStorage helpers
+// ---------------------------------------------------------------------------
+const LS = {
+  PROJECT_ID: "buildcodepro_wizard_projectId",
+  JOB_ID: "buildcodepro_wizard_jobId",
+  PROJECT_INFO: "buildcodepro_wizard_projectInfo",
+} as const;
+
+const lsGet = (key: string) =>
+  typeof window !== "undefined" ? localStorage.getItem(key) : null;
+const lsSet = (key: string, val: string) =>
+  typeof window !== "undefined" && localStorage.setItem(key, val);
+const lsRemove = (key: string) =>
+  typeof window !== "undefined" && localStorage.removeItem(key);
 
 const CONTINUE_LABELS: Record<DesignWizardStep, string> = {
   "project-info": "Continue",
@@ -154,38 +164,98 @@ export function DesignWizard() {
 
   const [currentStep, setCurrentStep] = useState<DesignWizardStep>(initialStep);
 
+  // Sync step state with URL (browser back/forward)
   useEffect(() => {
     if (stepParam && stepParam !== currentStep && DESIGN_WIZARD_STEPS.some((s) => s.id === stepParam)) {
       setCurrentStep(stepParam);
     }
   }, [stepParam, currentStep]);
 
-  const updateStepInUrl = (newStep: DesignWizardStep) => {
-    setCurrentStep(newStep);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("step", newStep);
-    router.push(`${pathname}?${params.toString()}`);
-  };
+  const updateStepInUrl = useCallback(
+    (newStep: DesignWizardStep) => {
+      setCurrentStep(newStep);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("step", newStep);
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams],
+  );
+
+  // ── Persisted state ────────────────────────────────────────────────────────
+
   const [files, setFiles] = useState<UploadedFile[]>([]);
 
-  // Always start with defaults on both server & client render (avoids
-  // hydration mismatch), then hydrate from localStorage / the resume API
-  // explicitly on mount.
-  const [projectInfo, setProjectInfo] = useState<ProjectInfoFormData>(
-    DEFAULT_PROJECT_INFO,
-  );
-  const [isProjectInfoHydrated, setIsProjectInfoHydrated] = useState(false);
+  const [projectInfo, setProjectInfo] = useState<ProjectInfoFormData>(() => {
+    const saved = lsGet(LS.PROJECT_INFO);
+    if (saved) {
+      try { return JSON.parse(saved); } catch { /* ignore corrupt */ }
+    }
+    return DEFAULT_PROJECT_INFO;
+  });
 
-  const [projectInfoErrors, setProjectInfoErrors] = useState<Partial<Record<keyof ProjectInfoFormData, string>>
+  const [projectInfoErrors, setProjectInfoErrors] = useState<
+    Partial<Record<keyof ProjectInfoFormData, string>>
   >({});
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [jobId, setJobId] = useState<string | null>(null);
+
+  // projectId and jobId are persisted so page refresh reconnects the WebSocket
+  const [projectId, setProjectId] = useState<string | null>(() => lsGet(LS.PROJECT_ID));
+  const [jobId, setJobId] = useState<string | null>(() => lsGet(LS.JOB_ID));
   const [isUploading, setIsUploading] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isProjectInfoHydrated, setIsProjectInfoHydrated] = useState(false);
 
   // Quota / plan-limit style blocking errors (e.g. DESIGN_QUOTA_EXCEEDED)
   // render a full-page fallback instead of the wizard form.
   const [quotaError, setQuotaError] = useState<ApiErrorPayload | null>(null);
+
+  const handleQuotaAwareError = (error: any, fallback: string) => {
+    const payload = extractApiErrorPayload(error);
+    if (payload?.error_code === "DESIGN_QUOTA_EXCEEDED") {
+      setQuotaError(payload);
+    } else {
+      toast.error(getErrorMessage(error, fallback));
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (currentStep === "project-info" && !projectId) {
+      const validationErrors = validateProjectInfo(projectInfo);
+      if (Object.keys(validationErrors).length > 0) {
+        setProjectInfoErrors(validationErrors);
+        toast.error("Please fill in all required fields to save draft.");
+        return;
+      }
+
+      setIsSavingDraft(true);
+      try {
+        await createProjectMutation.mutateAsync({
+          name: projectInfo.projectName,
+          address: projectInfo.address,
+          jurisdiction: projectInfo.jurisdiction,
+          square_footage: parseInt(projectInfo.squareFootage) || 0,
+          number_of_floors: parseInt(projectInfo.numberOfFloors) || 1,
+          occupancy_type: projectInfo.occupancyType.toLowerCase(),
+          sprinkler_system: projectInfo.optionalSystems.sprinkler,
+          elevator: projectInfo.optionalSystems.elevator,
+          duct_detectors: projectInfo.optionalSystems.ductDetectors,
+          voice_evacuation: projectInfo.optionalSystems.voiceEvacuation,
+          special_notes: projectInfo.specialNotes,
+        });
+        toast.success("Draft saved successfully.");
+      } catch (error) {
+        console.error("Failed to save draft:", error);
+        handleQuotaAwareError(error, "Failed to save draft. Please try again.");
+        setIsSavingDraft(false);
+        return;
+      }
+      setIsSavingDraft(false);
+    } else {
+      toast.success("Draft saved successfully.");
+    }
+
+    const basePath = pathname.startsWith("/estimator") ? "/estimator" : "/company";
+    router.push(`${basePath}/projects`);
+  };
 
   const {
     data: resumeProjectData,
@@ -243,29 +313,50 @@ export function DesignWizard() {
     setIsProjectInfoHydrated(true);
   }, [resumeProjectIdParam]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && isProjectInfoHydrated) {
-      localStorage.setItem("buildcodepro_wizard_projectInfo", JSON.stringify(projectInfo));
-    }
-  }, [projectInfo, isProjectInfoHydrated]);
+  useEffect(() => { if (projectId) lsSet(LS.PROJECT_ID, projectId); }, [projectId]);
+  useEffect(() => { if (jobId) lsSet(LS.JOB_ID, jobId); else lsRemove(LS.JOB_ID); }, [jobId]);
+  useEffect(() => { lsSet(LS.PROJECT_INFO, JSON.stringify(projectInfo)); }, [projectInfo]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && projectId) {
-      localStorage.setItem("buildcodepro_wizard_projectId", projectId);
-    }
-  }, [projectId]);
+  // ── On-mount job check ─────────────────────────────────────────────────────
+  // When the page loads with an existing projectId (e.g. after refresh), fetch
+  // the latest job ONCE and route the user to the correct wizard step.
+  // No polling — the WebSocket is the live data source.
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
-  // Clear the local storage draft when the user navigates away (component unmounts).
-  // Note: This does NOT run on browser refresh, so refresh preserves the draft,
-  // but navigating to Dashboard and back will start a fresh design.
-  useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("buildcodepro_wizard_projectInfo");
-        localStorage.removeItem("buildcodepro_wizard_projectId");
+  const routeByJobStatus = useCallback(
+    (status: string) => {
+      if (status === "completed") {
+        updateStepInUrl("results");
+      } else if (status === "running" || status === "pending" || status === "failed" || status === "cancelled") {
+        updateStepInUrl("ai-analysis");
       }
-    };
-  }, []);
+    },
+    [updateStepInUrl],
+  );
+
+  useEffect(() => {
+    // Only auto-route if we're on a step that could be stale after a refresh
+    if (!projectId || initialCheckDone) return;
+    if (currentStep !== "ai-analysis" && currentStep !== "results") {
+      setInitialCheckDone(true);
+      return;
+    }
+    (async () => {
+      try {
+        const data = await getAnalysisJobsApi(projectId);
+        const latestJob = data?.items?.[0];
+        if (latestJob) {
+          if (latestJob.id !== jobId) setJobId(latestJob.id);
+          routeByJobStatus(latestJob.status as string);
+        }
+      } catch (err) {
+        console.warn("[DesignWizard] Initial job check failed:", err);
+      } finally {
+        setInitialCheckDone(true);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const projectChecklist = useMemo(
     () => getProjectInfoChecklistState(projectInfo),
@@ -339,65 +430,8 @@ export function DesignWizard() {
   };
 
   const createProjectMutation = useCreateProjectMutation();
-  const uploadDrawingMutation = useUploadDrawingMutation();
-  const startAnalysisMutation = useStartAnalysisMutation();
-
-  // Shared payload builder so Continue and Save Draft always send the same
-  // project data — only the `status` field differs.
-  const buildProjectPayload = (status: "draft" | "active") => ({
-    name: projectInfo.projectName,
-    address: projectInfo.address,
-    jurisdiction: projectInfo.jurisdiction,
-    square_footage: parseInt(projectInfo.squareFootage) || 0,
-    number_of_floors: parseInt(projectInfo.numberOfFloors) || 1,
-    occupancy_type: projectInfo.occupancyType.toLowerCase(),
-    sprinkler_system: projectInfo.optionalSystems.sprinkler,
-    elevator: projectInfo.optionalSystems.elevator,
-    duct_detectors: projectInfo.optionalSystems.ductDetectors,
-    voice_evacuation: projectInfo.optionalSystems.voiceEvacuation,
-    special_notes: projectInfo.specialNotes,
-    status,
-  });
-
-  // Central handler: if this is a DESIGN_QUOTA_EXCEEDED (or similar
-  // blocking) error, switch to the fallback screen instead of just
-  // toasting. Returns true if it was handled as a quota error.
-  const handleQuotaAwareError = (error: any, fallbackMessage: string): boolean => {
-    const payload = extractApiErrorPayload(error);
-
-    if (payload?.error_code === "DESIGN_QUOTA_EXCEEDED") {
-      setQuotaError(payload);
-      toast.error(payload.message ?? fallbackMessage);
-      return true;
-    }
-
-    toast.error(getErrorMessage(error, fallbackMessage));
-    return false;
-  };
-
-  // Save Draft: only saves + redirects to the projects list.
-  // It intentionally does NOT touch `currentStep` / call updateStepInUrl.
-  const handleSaveDraft = async () => {
-    if (isSavingDraft) return; // prevent double submits
-
-    setIsSavingDraft(true);
-    try {
-      const response = await createProjectMutation.mutateAsync(
-        buildProjectPayload("draft"),
-      );
-
-      setProjectId(response?.id ?? response?.data?.id ?? null);
-      toast.success("Draft saved successfully!");
-
-      // Navigate away to the projects list after saving.
-      router.push("/company/projects");
-    } catch (error) {
-      console.error("Failed to save draft:", error);
-      handleQuotaAwareError(error, "Failed to save draft. Please try again.");
-    } finally {
-      setIsSavingDraft(false);
-    }
-  };
+  const bulkPresignMutation = useBulkPresignUploadMutation();
+  const bulkCompleteMutation = useBulkCompleteMutation();
 
   const handleContinue = async () => {
     if (currentStep === "project-info") {
@@ -412,11 +446,23 @@ export function DesignWizard() {
       setProjectInfoErrors({});
 
       try {
-        const response = await createProjectMutation.mutateAsync(
-          buildProjectPayload("active"),
-        );
+        const response = await createProjectMutation.mutateAsync({
+          name: projectInfo.projectName,
+          address: projectInfo.address,
+          jurisdiction: projectInfo.jurisdiction,
+          square_footage: parseInt(projectInfo.squareFootage) || 0,
+          number_of_floors: parseInt(projectInfo.numberOfFloors) || 1,
+          occupancy_type: projectInfo.occupancyType.toLowerCase(),
+          sprinkler_system: projectInfo.optionalSystems.sprinkler,
+          elevator: projectInfo.optionalSystems.elevator,
+          duct_detectors: projectInfo.optionalSystems.ductDetectors,
+          voice_evacuation: projectInfo.optionalSystems.voiceEvacuation,
+          special_notes: projectInfo.specialNotes,
+        });
 
-        setProjectId(response?.id ?? response?.data?.id ?? null);
+        const newProjectId = response?.id ?? response?.data?.id ?? null;
+        setProjectId(newProjectId);
+        setJobId(null); // new project → no prior job
         toast.success("Project created successfully!");
       } catch (error) {
         console.error("Failed to create project:", error);
@@ -437,9 +483,8 @@ export function DesignWizard() {
 
       if (filesToUpload.length > 0) {
         setIsUploading(true);
-        let hasError = false;
-        let hasQuotaError = false;
 
+        // Mark all queued files as uploading
         setFiles((prev) =>
           prev.map((f) =>
             filesToUpload.some((fu) => fu.id === f.id)
@@ -448,59 +493,147 @@ export function DesignWizard() {
           )
         );
 
-        for (const fileObj of filesToUpload) {
-          try {
-            const response = await uploadDrawingMutation.mutateAsync({
-              projectId,
-              file: fileObj.file!,
-            });
-            toast.success(`Uploaded ${fileObj.name} successfully!`);
-            handleFileUpdate(fileObj.id, {
-              status: "uploaded",
-              drawingId: response?.data?.id,
-            });
-          } catch (error: any) {
-            console.error("Upload failed:", error);
-            const message = getErrorMessage(error, "Upload failed.");
-            handleFileUpdate(fileObj.id, {
-              status: "error",
-              errorMessage: message,
-            });
+        try {
+          // ── Phase 1: get presigned URLs ──────────────────────────────────
+          console.log(
+            "[Design Wizard] Requesting presigned URLs for",
+            filesToUpload.length,
+            "drawing(s), project:",
+            projectId
+          );
+          const presignItems = await bulkPresignMutation.mutateAsync({
+            projectId,
+            payload: {
+              files: filesToUpload.map((f) => ({
+                file_name: f.file!.name,
+                content_type: f.file!.type || "application/octet-stream",
+                file_size: f.file!.size,
+              })),
+            },
+          });
 
-            const wasQuota = handleQuotaAwareError(
-              error,
-              `Failed to upload ${fileObj.name}: ${message}`,
-            );
+          // ── Phase 2: PUT each file directly to S3 ───────────────────────
+          // Match by INDEX — presignItems[i] always corresponds to filesToUpload[i]
+          // (the backend may normalise file_name, so string matching is unreliable)
+          const putResults = await Promise.allSettled(
+            presignItems.map(async (item, idx) => {
+              const localFile = filesToUpload[idx]?.file;
+              if (!localFile) {
+                throw new Error(`No local file at index ${idx} for drawing ${item.drawing_id}`);
+              }
+              const res = await fetch(item.upload_url, {
+                method: "PUT",
+                body: localFile,
+                headers: {
+                  "Content-Type": localFile.type || "application/octet-stream",
+                },
+              });
+              if (!res.ok) {
+                throw new Error(`S3 upload failed for drawing ${item.drawing_id}: HTTP ${res.status}`);
+              }
+              return item.drawing_id;
+            })
+          );
 
-            hasError = true;
-            if (wasQuota) {
-              hasQuotaError = true;
-              break; // stop uploading remaining files, quota is exhausted
+          const successfulDrawingIds: string[] = [];
+          putResults.forEach((result, idx) => {
+            if (result.status === "fulfilled") {
+              successfulDrawingIds.push(result.value);
+            } else {
+              console.error(
+                `[Design Wizard] S3 PUT failed for drawing ${presignItems[idx]?.drawing_id}:`,
+                result.reason
+              );
             }
+          });
+
+          if (successfulDrawingIds.length === 0) {
+            throw new Error("All S3 uploads failed. Please try again.");
           }
+
+          // ── Phase 3: confirm uploads via complete-batch ──────────────────
+          console.log(
+            "[Design Wizard] Confirming",
+            successfulDrawingIds.length,
+            "upload(s) via complete-batch, drawing_ids:",
+            successfulDrawingIds
+          );
+          const completeResult = await bulkCompleteMutation.mutateAsync({
+            projectId,
+            payload: { drawing_ids: successfulDrawingIds },
+          });
+
+          // Reflect per-file results back on the UI (index-based)
+          setFiles((prev) =>
+            prev.map((f) => {
+              const uploadIdx = filesToUpload.findIndex((fu) => fu.id === f.id);
+              if (uploadIdx === -1) return f; // file not in this batch
+
+              const presignItem = presignItems[uploadIdx];
+
+              // S3 PUT failure for this index
+              if (!successfulDrawingIds.includes(presignItem.drawing_id)) {
+                return { ...f, status: "error", errorMessage: "S3 upload failed" };
+              }
+
+              // complete-batch per-item result (matched by drawing_id)
+              const batchItem = completeResult.items.find(
+                (r) => r.drawing_id === presignItem.drawing_id
+              );
+              if (batchItem?.success) {
+                return { ...f, status: "uploaded" };
+              }
+              return {
+                ...f,
+                status: "error",
+                errorMessage: batchItem?.error_message ?? "Confirmation failed",
+              };
+            })
+          );
+
+
+          const { completed_count, failed_count } = completeResult;
+          if (failed_count > 0) {
+            toast.warning(
+              `${completed_count} file(s) uploaded. ${failed_count} file(s) could not be confirmed — check the list for details.`
+            );
+          } else {
+            toast.success(`Uploaded ${completed_count} file(s) successfully!`);
+          }
+        } catch (error: any) {
+          console.error("[Design Wizard] Bulk presign/upload failed:", error);
+          const message =
+            error instanceof Error ? error.message : (error?.data?.message ?? "Upload failed");
+          setFiles((prev) =>
+            prev.map((f) =>
+              filesToUpload.some((fu) => fu.id === f.id)
+                ? { ...f, status: "error", errorMessage: message }
+                : f
+            )
+          );
+          toast.error(`Failed to upload drawings: ${message}`);
+          setIsUploading(false);
+          return;
         }
 
         setIsUploading(false);
-        if (hasQuotaError) {
-          return; // fallback screen will render; don't proceed to next step
-        }
-        if (hasError) {
-          return;
-        }
       }
 
-      // Start AI analysis job and get job_id for WebSocket
-      if (!projectId) {
-        toast.error("Project ID is missing.");
-        return;
-      }
-      try {
-        const analysisResponse = await startAnalysisMutation.mutateAsync(projectId);
-        setJobId(analysisResponse.job_id);
-      } catch (error) {
-        console.error("[Design Wizard] Failed to start analysis:", error);
-        handleQuotaAwareError(error, "Failed to start AI analysis. Please try again.");
-        return;
+      // Fetch jobs ONCE after upload so AiAnalysisStep gets jobId immediately
+      // and the WebSocket connects without delay. No polling needed.
+      if (projectId) {
+        try {
+          const data = await getAnalysisJobsApi(projectId);
+          const latestJob = data?.items?.[0];
+          if (latestJob?.id) {
+            setJobId(latestJob.id);
+            console.log("[DesignWizard] Job resolved after upload:", latestJob.id, "status:", latestJob.status);
+          } else {
+            console.warn("[DesignWizard] No job found after upload — WebSocket will connect once jobId arrives");
+          }
+        } catch (err) {
+          console.warn("[DesignWizard] Job fetch after upload failed:", err);
+        }
       }
     }
 
@@ -527,7 +660,7 @@ export function DesignWizard() {
   let continueLabel = CONTINUE_LABELS[currentStep];
   if (createProjectMutation.isPending && currentStep === "project-info") {
     continueLabel = "Creating...";
-  } else if (isUploading && currentStep === "upload") {
+  } else if ((isUploading || bulkPresignMutation.isPending || bulkCompleteMutation.isPending) && currentStep === "upload") {
     continueLabel = "Uploading...";
   }
 
@@ -627,6 +760,7 @@ export function DesignWizard() {
           projectInfo={projectInfo}
           projectId={projectId}
           jobId={jobId}
+          // onJobIdResolved={setJobId}
           onComplete={handleAnalysisComplete}
           onCancel={handleAnalysisCancel}
         />
@@ -643,6 +777,7 @@ export function DesignWizard() {
           continueLabel={continueLabel}
           isContinueDisabled={isContinueDisabled}
           isSavingDraft={isSavingDraft}
+          isSaveDraftDisabled={currentStep === "project-info" && Object.keys(validateProjectInfo(projectInfo)).length > 0}
         />
       ) : null}
     </div>

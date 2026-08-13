@@ -97,7 +97,7 @@ export function BomMaterialTakeoffPanel({
     return (
       <div className="flex flex-col items-center justify-center gap-1 rounded-[14px] border border-border bg-white py-16">
         <p className="font-body text-sm font-medium text-red-600">
-          Failed to load bill of materials
+          Bill of materials not found.
         </p>
         <p className="font-body text-xs text-stat-label">
           {error instanceof Error ? error.message : "Please try again."}

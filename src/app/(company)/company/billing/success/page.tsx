@@ -47,7 +47,7 @@ export default function BillingSuccessPage() {
         result.data?.subscription_status === "trialing";
 
       if (isActive) {
-        await syncMeIntoStore();
+        await syncMeIntoStore(result.data?.plan_code);
         setStatus("success");
         return;
       }
@@ -56,16 +56,16 @@ export default function BillingSuccessPage() {
         setTimeout(poll, 1500);
       } else {
 
-        await syncMeIntoStore();
+        await syncMeIntoStore(result.data?.plan_code);
         setStatus("success");
       }
     };
 
-    const syncMeIntoStore = async () => {
+    const syncMeIntoStore = async (planCode?: string) => {
       try {
         const result = await refetchMe();
         if (result.data) {
-          updateUser(result.data as any);
+          updateUser({ ...result.data, plan: planCode } as any);
         }
       } catch (error) {
         console.error("Failed to sync profile after checkout:", error);

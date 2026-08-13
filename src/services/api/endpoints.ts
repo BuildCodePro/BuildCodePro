@@ -43,6 +43,11 @@ export const API_ENDPOINTS = {
 
         DRAWINGS: {
             UPLOAD_DRAWING: (projectId: string) => `/projects/${projectId}/drawings`,
+            BULK_UPLOAD: (projectId: string) => `/projects/${projectId}/drawings/bulk`,
+            UPLOAD_BATCH: (projectId: string) => `/projects/${projectId}/drawings/upload-batch`,
+            COMPLETE_BATCH: (projectId: string) => `/projects/${projectId}/drawings/complete-batch`,
+            COMPLETE_DRAWING: (projectId: string, drawingId: string) =>
+                `/projects/${projectId}/drawings/${drawingId}/complete`,
             GET_DRAWINGS: (projectId: string) => `/projects/${projectId}/drawings`,
             GET_SINGLE_DRAWING: (projectId: string, drawingId: string) =>
                 `/projects/${projectId}/drawings/${drawingId}`,
@@ -50,7 +55,9 @@ export const API_ENDPOINTS = {
                 `/projects/${projectId}/drawings/${drawingId}`,
         },
         ANALYSIS: {
-            START: (projectId: string) => `/projects/${projectId}/analysis/start`,
+            JOBS_LIST: (projectId: string) => `/projects/${projectId}/analysis/jobs`,
+            JOB_DETAIL: (projectId: string, jobId: string) => `/projects/${projectId}/analysis/jobs/${jobId}`,
+            JOB_RESULT: (projectId: string, jobId: string) => `/projects/${projectId}/analysis/jobs/${jobId}/result`,
             CANCEL: (projectId: string, jobId: string) => `/projects/${projectId}/analysis/jobs/${jobId}/cancel`,
             RETRY: (projectId: string, jobId: string) => `/projects/${projectId}/analysis/jobs/${jobId}/retry`,
             RESULT: (projectId: string) => `/projects/${projectId}/analysis/result`,
@@ -96,6 +103,8 @@ export const API_ENDPOINTS = {
         UPDATE_COMPANY_STATUS: (companyId: string) => `/admin/companies/${companyId}/status`,
         USERS: '/admin/users',
         ACTIVITY: '/admin/activity',
+        LLM_SETTINGS: '/admin/llm-settings',
+        LLM_SETTINGS_SYNC: '/admin/llm-settings/sync',
 
         SUPPORT: {
             ARTICLES: '/admin/support/articles',

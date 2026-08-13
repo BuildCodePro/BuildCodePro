@@ -8,6 +8,7 @@ import {
   FolderKanban,
   Users,
   Bell,
+  BellCheck,
 } from "lucide-react";
 
 import { routes } from "@/config/routes";

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { getPageTitle } from "@/lib/utils/get-page-title";
 import { cn } from "@/lib/utils/cn";
@@ -17,6 +17,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Clear wizard drafts when leaving the new-design flow
+  useEffect(() => {
+    if (!pathname.includes("/new-design")) {
+      localStorage.removeItem("buildcodepro_wizard_projectId");
+      localStorage.removeItem("buildcodepro_wizard_projectInfo");
+    }
+  }, [pathname]);
 
   return (
     <div className="flex min-h-screen bg-surface">

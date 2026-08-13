@@ -4,6 +4,7 @@ import {
   CreditCard,
   HeadphonesIcon,
   LayoutDashboard,
+  Settings2,
   Users,
 } from "lucide-react";
 
@@ -40,5 +41,10 @@ export const superAdminNavigation: SuperAdminNavItem[] = [
     label: "Support",
     href: routes.superAdmin.support,
     icon: HeadphonesIcon,
+  },
+  {
+    label: "LLM Settings",
+    href: routes.superAdmin.llmSettings,
+    icon: Settings2,
   },
 ];

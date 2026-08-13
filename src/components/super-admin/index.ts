@@ -16,3 +16,4 @@ export { SupportTicketsTable } from "./support-tickets-table";
 export { UsageTrackingTable } from "./usage-tracking-table";
 export { UsersContent } from "./users-content";
 export { UsersTable } from "./users-table";
+export { LlmSettingsContent } from "./llm-settings-content";

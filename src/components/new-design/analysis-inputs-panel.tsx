@@ -65,7 +65,7 @@ export function AnalysisInputsPanel({
         >
           {isRetrying ? "Retrying..." : "Retry Analysis"}
         </Button>
-        <Button
+        {/* <Button
           type="button"
           variant="outline"
           className="h-11 max-w-none px-6"
@@ -73,7 +73,7 @@ export function AnalysisInputsPanel({
           disabled={!canCancel || isCancelling}
         >
           {isCancelling ? "Cancelling..." : "Cancel Analysis"}
-        </Button>
+        </Button> */}
       </div>
 
     </div>

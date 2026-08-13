@@ -71,6 +71,7 @@ export function ProjectsContent({ projectsBasePath }: ProjectsContentProps) {
     dateCreated: p.created_at,
     lastUpdated: p.updated_at,
     squareFootage: p.square_footage,
+    current_step: p.current_step,
   }));
 
   const totalPages = data?.total ? Math.ceil(data.total / pageSize) : 0;

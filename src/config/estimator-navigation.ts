@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BellCheck,
   FolderKanban,
   HeadphonesIcon,
   LayoutDashboard,

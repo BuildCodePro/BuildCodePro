@@ -61,7 +61,7 @@ export function RecentProjectsTable({
             <TableHead>Occupancy Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Last Updated</TableHead>
-            <TableHead className="text-right">Action</TableHead>
+            {/* <TableHead className="text-right">Action</TableHead> */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -97,7 +97,7 @@ export function RecentProjectsTable({
                   {formatDate(project.lastUpdated)}
                 </TableCell>
 
-                <TableCell className="text-right">
+                {/* <TableCell className="text-right">
                   <Link
                     href={`${projectsBasePath}/${project.id}`}
                     className={cn(
@@ -111,7 +111,7 @@ export function RecentProjectsTable({
                     Open
                     <ArrowRight className="size-3.5" />
                   </Link>
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))
           )}

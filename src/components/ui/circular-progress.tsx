@@ -30,19 +30,19 @@ export function CircularProgress({
     let animationFrameId: number;
     const startValue = displayValue;
     const endValue = value;
-    
+
     if (startValue === endValue) return;
 
-    const duration = 800; // Smooth 800ms tween
+    const duration = 100; // Smooth 800ms tween
     const startTime = performance.now();
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // ease-out cubic
       const easeProgress = 1 - Math.pow(1 - progress, 3);
-      
+
       setDisplayValue(startValue + (endValue - startValue) * easeProgress);
 
       if (progress < 1) {

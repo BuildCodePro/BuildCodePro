@@ -39,6 +39,7 @@ export interface DashboardProject {
   duct_detectors?: boolean;
   voice_evacuation?: boolean;
   special_notes?: string;
+  current_step?: string;
 }
 
 export interface PlanUsage {

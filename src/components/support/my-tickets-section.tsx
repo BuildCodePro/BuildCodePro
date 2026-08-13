@@ -53,7 +53,7 @@ export function MyTicketsSection({ onOpenTicket }: MyTicketsSectionProps) {
           </p>
         ) : isError ? (
           <p className="font-body text-sm text-destructive" role="alert">
-            Failed to load your tickets.
+            Ticket details not found.
           </p>
         ) : tickets.length === 0 ? (
           <div className="font-body text-sm text-stat-label">
