@@ -195,7 +195,7 @@ export function DashboardHeader({
                   <button
                     type="button"
                     onClick={handleMarkAllRead}
-                    className="font-body text-xs text-primary hover:underline"
+                    className="font-body cursor-pointer text-xs text-primary hover:underline"
                   >
                     Mark all as read
                   </button>
