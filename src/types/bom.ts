@@ -54,6 +54,7 @@ export interface BomLineUpdatePayload {
     manufacturer?: string | null;
     part_number?: string | null;
     notes?: string | null;
+  mark_reviewed?: boolean;
 }
 
 export interface BomLineCreatePayload {

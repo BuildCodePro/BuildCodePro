@@ -5,7 +5,8 @@ export const BOM_CATEGORIES = [
   { id: "conduit", label: "Conduit" },
   { id: "notification_appliances", label: "Notification Appliances" },
   { id: "control_equipment", label: "Control Equipment" },
-  { id: "miscellaneous", label: "Labor & Misc" },
+  { id: "labor", label: "Labor" },
+  { id: "miscellaneous", label: "Miscellaneous" },
 ] as const;
 
 export type BomCategoryId = (typeof BOM_CATEGORIES)[number]["id"];
@@ -17,7 +18,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   initiating_devices: "Initiating Devices",
   notification_appliances: "Notification Appliances",
   control_equipment: "Control Equipment",
-  miscellaneous: "Labor & Misc",
+  labor: "Labor",
+  miscellaneous: "Miscellaneous",
 };
 
 /**

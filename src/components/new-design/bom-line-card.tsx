@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, ExternalLink, History, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { CheckCircle2, Edit2, ExternalLink, History, Loader2, RotateCcw, Trash2 } from "lucide-react";
 
 import { ConfidenceBadge } from "@/components/ui/confidence-badge";
 import { GENERIC_ITEM_LABEL, getBomCategoryLabel, isGenericBomItem } from "@/lib/constants/bom";
@@ -182,6 +182,11 @@ export function BomLineCard({ lineItem, currency, canEdit, onSaveLine, onDeleteL
                 <button type="button" className={actionClassName} onClick={startEditing} disabled={isBusy || draft !== null} aria-label={`Edit ${lineItem.device_name}`} data-testid="bom-line-edit">
                   <Edit2 className="size-3.5" /> Edit
                 </button>
+                {lineItem.review_note || lineItem.needs_review_after_rerun ? (
+                  <button type="button" className={cn(actionClassName, "text-emerald-700 hover:text-emerald-800")} disabled={isBusy || draft !== null} onClick={() => void runLineAction(() => onSaveLine(lineItem.id, { mark_reviewed: true }))} aria-label={`Mark ${lineItem.device_name} reviewed`} data-testid="bom-line-mark-reviewed">
+                    {isBusy ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />} Mark reviewed
+                  </button>
+                ) : null}
                 <button type="button" className={actionClassName} onClick={() => onShowHistory(lineItem)} aria-label={`History for ${lineItem.device_name}`}>
                   <History className="size-3.5" /> History
                 </button>

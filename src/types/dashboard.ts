@@ -1,5 +1,6 @@
 export type ProjectStatus =
   | "completed"
+  | "complete"
   | "review_needed"
   | "processing"
   | "draft"
