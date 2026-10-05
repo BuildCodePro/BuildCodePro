@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useSubscriptionConfirmation } from "@/hooks/use-subscription-confirmation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
@@ -23,43 +25,12 @@ export default function BillingSuccessPage() {
         isFetching,
     } = useSubscriptionQuery();
 
-    useEffect(() => {
-        if (!sessionId) {
-            setStatus("error");
-            return;
-        }
-
-        // Stripe webhook usually updates the subscription slightly after
-        // checkout completes, so we poll a couple of times to give it a
-        // moment to land before showing the final state.
-        let attempts = 0;
-        const maxAttempts = 5;
-
-        const poll = async () => {
-            attempts += 1;
-            const result = await refetch();
-
-            const isActive =
-                result.data?.subscription_status === "active" ||
-                result.data?.subscription_status === "trialing";
-
-            if (isActive) {
-                setStatus("success");
-                return;
-            }
-
-            if (attempts < maxAttempts) {
-                setTimeout(poll, 1500);
-            } else {
-                // Even if we can't confirm yet, checkout itself succeeded
-                // (Stripe only redirects here on success), so don't scare the user.
-                setStatus("success");
-            }
-        };
-
-        poll();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sessionId]);
+    useSubscriptionConfirmation(
+        sessionId,
+        refetch,
+        () => setStatus("success"),
+        () => setStatus("error"),
+    );
 
     return (
         <div className="flex min-h-[70vh] w-full items-center justify-center px-4">

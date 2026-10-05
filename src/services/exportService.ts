@@ -104,7 +104,9 @@ export interface CreateExportRequest {
     design_recommendations: boolean;
     bom: boolean;
     compliance_checklist: boolean;
+    calculations?: boolean;
     design_narrative: boolean;
+    certification?: boolean;
     nfpa_disclaimer: boolean;
     company_branding: boolean;
   };

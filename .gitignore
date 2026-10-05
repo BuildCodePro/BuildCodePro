@@ -62,10 +62,10 @@ pids/
 !.yarn/sdks
 !.yarn/versions
 
-# Keep lock files (Recommended)
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
+# Yarn is the package manager for this project.
+# yarn.lock is committed; npm and pnpm lock files are not used.
+package-lock.json
+pnpm-lock.yaml
 
 # ==========================
 # IDE / Editor

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, FileText, Image as ImageIcon, Maximize2, Minimize2 } from "lucide-react";
+
 import { cn } from "@/lib/utils/cn";
 import type { Drawing } from "@/services/analysisService";
-import { FloorPlanViewer } from "./floor-plan-viewer";
-import { FileText, Image as ImageIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { UploadedDocumentViewer } from "./uploaded-document-viewer";
 
 interface FloorPlanPreviewProps {
   className?: string;
@@ -12,79 +13,96 @@ interface FloorPlanPreviewProps {
   drawings?: Drawing[];
 }
 
-export function FloorPlanPreview({ className, design_image, drawings }: FloorPlanPreviewProps) {
-  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(
-    drawings?.[0]?.id ?? null
+function isPdfDrawing(drawing?: Drawing) {
+  return Boolean(
+    drawing?.content_type?.toLowerCase().includes("pdf") ||
+      drawing?.file_name?.toLowerCase().endsWith(".pdf"),
   );
+}
 
-  const activeDrawing = drawings?.find((d) => d.id === selectedDrawingId) ?? drawings?.[0];
-  const activeImageUrl = activeDrawing?.file_url ?? design_image ?? "";
+export function FloorPlanPreview({
+  className,
+  design_image,
+  drawings,
+}: FloorPlanPreviewProps) {
+  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(
+    drawings?.[0]?.id ?? null,
+  );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const activeDrawing =
+    drawings?.find((drawing) => drawing.id === selectedDrawingId) ?? drawings?.[0];
+  const activeDrawingIndex = drawings
+    ? drawings.findIndex((drawing) => drawing.id === (activeDrawing?.id ?? ""))
+    : -1;
+  const documentUrl = activeDrawing?.file_url || design_image || "";
+  const wrapperClass = isFullscreen
+    ? "fixed inset-0 z-50 flex flex-col bg-slate-950"
+    : cn("flex flex-col", className);
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex flex-col gap-2">
-        <div>
-          <h3 className="font-heading text-base font-semibold text-accent-cyan">
-            Floor Plan Preview
-          </h3>
-          <p className="mt-1 font-body text-xs text-stat-label">
-            Drawing visualization — zoom in to inspect rooms, dimensions, and layout details
-          </p>
-        </div>
-
-        {drawings && drawings.length > 1 ? (
-          <div className="flex items-center justify-center gap-3 rounded-full border border-border bg-background px-3 py-1.5 shadow-sm">
-            <button
-              type="button"
-              onClick={() => {
-                const currentIndex = drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id);
-                if (currentIndex > 0) setSelectedDrawingId(drawings[currentIndex - 1].id);
-              }}
-              disabled={drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) === 0}
-              className="p-0.5 text-stat-label transition-colors hover:text-primary disabled:opacity-30"
-              aria-label="Previous drawing"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              {(() => {
-                const isPdf = activeDrawing?.content_type?.includes("pdf") || activeDrawing?.file_name?.endsWith(".pdf");
-                return (
-                  <>
-                    {isPdf ? (
-                      <FileText className="size-3.5 text-primary" />
-                    ) : (
-                      <ImageIcon className="size-3.5 text-primary" />
-                    )}
-                    <span className="max-w-[150px] truncate" title={activeDrawing?.file_name}>
-                      {activeDrawing?.file_name}
-                    </span>
-                    <span className="text-xs font-normal text-stat-label">
-                      ({drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) + 1}/{drawings.length})
-                    </span>
-                  </>
-                );
-              })()}
+    <div className={wrapperClass}>
+      <div className="flex items-center justify-between px-3 py-2">
+        <div className="flex items-center gap-3">
+          <h3 className="font-heading text-sm font-semibold text-accent-cyan">Floor Plan</h3>
+          {drawings && drawings.length > 1 ? (
+            <div className="flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeDrawingIndex > 0) {
+                    setSelectedDrawingId(drawings[activeDrawingIndex - 1].id);
+                  }
+                }}
+                disabled={activeDrawingIndex <= 0}
+                className="p-0.5 text-slate-400 hover:text-white disabled:opacity-30"
+                aria-label="Previous drawing"
+              >
+                <ChevronLeft className="size-3.5" />
+              </button>
+              <span className="flex items-center gap-1 text-xs text-slate-300">
+                {isPdfDrawing(activeDrawing) ? (
+                  <FileText className="size-3 text-primary" />
+                ) : (
+                  <ImageIcon className="size-3 text-primary" />
+                )}
+                <span className="max-w-[120px] truncate">{activeDrawing?.file_name}</span>
+                <span className="text-slate-500">
+                  ({activeDrawingIndex + 1}/{drawings.length})
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeDrawingIndex < drawings.length - 1) {
+                    setSelectedDrawingId(drawings[activeDrawingIndex + 1].id);
+                  }
+                }}
+                disabled={activeDrawingIndex >= drawings.length - 1}
+                className="p-0.5 text-slate-400 hover:text-white disabled:opacity-30"
+                aria-label="Next drawing"
+              >
+                <ChevronRight className="size-3.5" />
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                const currentIndex = drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id);
-                if (currentIndex < drawings.length - 1) setSelectedDrawingId(drawings[currentIndex + 1].id);
-              }}
-              disabled={drawings.findIndex((d) => (selectedDrawingId || drawings[0].id) === d.id) === drawings.length - 1}
-              className="p-0.5 text-stat-label transition-colors hover:text-primary disabled:opacity-30"
-              aria-label="Next drawing"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        >
+          {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+        </button>
       </div>
-
-      <FloorPlanViewer design_image={activeImageUrl} />
+      <div className="min-h-0 flex-1">
+        <UploadedDocumentViewer
+          fileUrl={documentUrl}
+          fileName={activeDrawing?.file_name}
+          contentType={activeDrawing?.content_type}
+          className="h-full"
+        />
+      </div>
     </div>
   );
 }

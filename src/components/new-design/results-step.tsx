@@ -602,7 +602,7 @@ import {
 import type { DesignRecommendation, DesignResults, ProjectInfoFormData, RecommendationAccent, RecommendationBadgeVariant, ResultsTabId } from "@/types/new-design";
 import { useAnalysisResultQuery, useAnalysisJobResultQuery } from "@/services/analysisService";
 import { useCreateExportMutation } from "@/services/exportService";
-import { useGetProjectQuery, useSendForReviewMutation, useEngineersQuery } from "@/services/projectService";
+import { useGetProjectQuery, useSendForReviewMutation, useEngineersQuery, REVIEW_ACKNOWLEDGMENTS } from "@/services/projectService";
 import { useModulePermission } from "@/hooks/use-permission";
 import { useState, useEffect } from "react";
 
@@ -716,6 +716,7 @@ export function ResultsStep({
     useState<ResultsTabId>("design-recommendations");
   const [isSendForReviewOpen, setIsSendForReviewOpen] = useState(false);
   const [selectedEngineerId, setSelectedEngineerId] = useState<string>("");
+  const [reviewAcknowledgments, setReviewAcknowledgments] = useState<Record<string, boolean>>({});
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(jobId);
   const [isJobHistoryOpen, setIsJobHistoryOpen] = useState(false);
 
@@ -733,7 +734,15 @@ export function ResultsStep({
   const { data: engineersData, isLoading: isEngineersLoading } = useEngineersQuery();
   const engineers = engineersData?.items || [];
   const hasEngineers = engineers.length > 0;
-  const isDraftWorkflow = projectData?.workflow_status === "draft";
+  const workflowStatus = projectData?.workflow_status;
+  const isDesignLocked = Boolean(
+    projectData?.is_design_locked ||
+      workflowStatus === "under_review" ||
+      workflowStatus === "approved" ||
+      workflowStatus === "complete" ||
+      workflowStatus === "exported",
+  );
+  const isDraftWorkflow = workflowStatus === "draft";
 
   const { data: jobsData } = useAnalysisJobsQuery(projectId || "");
 
@@ -759,7 +768,7 @@ export function ResultsStep({
   const canUseBom = hasModule("bom_generation");
   const canUseCompliance = hasModule("compliance_engine");
   const canSendForReview =
-    !isDraftWorkflow &&
+    (workflowStatus === "ai_complete" || workflowStatus === "change_request") &&
     projectData?.engineer_review_status !== "in_review" &&
     projectData?.engineer_review_status !== "completed";
 
@@ -776,18 +785,20 @@ export function ResultsStep({
 
     try {
       const response = await createExportMutation.mutateAsync({
-        format: "csv",
+        format: "pdf",
         sections: {
           design_recommendations: true,
           bom: true,
           compliance_checklist: true,
+          calculations: true,
           design_narrative: true,
+          certification: true,
           nfpa_disclaimer: true,
           company_branding: true,
         },
       });
 
-      toast.success("CSV export created successfully.");
+      toast.success("Submittal PDF created.");
 
       if (response.download_url) {
         window.open(response.download_url, "_blank", "noopener,noreferrer");
@@ -818,13 +829,23 @@ export function ResultsStep({
       return;
     }
 
+    const acceptedAcknowledgments = REVIEW_ACKNOWLEDGMENTS
+      .filter((item) => reviewAcknowledgments[item.id])
+      .map((item) => item.id);
+    if (acceptedAcknowledgments.length !== REVIEW_ACKNOWLEDGMENTS.length) {
+      toast.error("Accept all review acknowledgments before sending.");
+      return;
+    }
+
     try {
       await sendForReviewMutation.mutateAsync({
         engineer_user_id: selectedEngineerId,
+        acknowledgments: acceptedAcknowledgments,
       });
       toast.success("Project sent for engineer review.");
       setIsSendForReviewOpen(false);
       setSelectedEngineerId("");
+      setReviewAcknowledgments({});
     } catch (error: any) {
       const message =
         error instanceof Error
@@ -978,6 +999,7 @@ export function ResultsStep({
           projectName={projectName}
           metadata={metadata}
           generatedAt={undefined}
+          codesStatement={projectData?.code_context?.resolved_summary}
         />
 
         <Card>
@@ -1039,9 +1061,16 @@ export function ResultsStep({
       ? "Completed"
       : "Pending";
 
+  const pagesAnalyzed =
+    activeJob?.pages_analyzed ?? activeJob?.pages_processed ?? 0;
+  const occupancyDetected =
+    activeJob?.construction_extract?.occupancy_found &&
+    activeJob.construction_extract.occupancy_type
+      ? ` · Occupancy ${activeJob.construction_extract.occupancy_type} detected`
+      : "";
   const jobStatusDescription =
     activeJob?.pages_total != null && activeJob.pages_total > 0
-      ? `${activeJob.pages_processed ?? 0} / ${activeJob.pages_total} pages processed`
+      ? `${pagesAnalyzed} / ${activeJob.pages_total} pages analyzed${occupancyDetected}`
       : "—";
 
   const displayMetrics = [
@@ -1096,6 +1125,13 @@ export function ResultsStep({
         </div>
       ) : null}
 
+      {isDesignLocked ? (
+        <AlertBanner
+          title="Design locked for qualified review"
+          description="Project info, placements, BOM, narrative, and analysis cannot change until a reviewer requests changes. Export remains available."
+        />
+      ) : null}
+
       {/* Compliance hero card + Suggested Devices panel */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="flex flex-col items-center gap-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 sm:flex-row lg:col-span-2">
@@ -1103,16 +1139,22 @@ export function ResultsStep({
 
           <div className="flex-1 space-y-2 text-center sm:text-left">
             <p className="font-body text-xs font-semibold uppercase tracking-wide text-primary">
-              {isAnalysisLoading ? "Analysis in progress" : "Analysis Completed"}
+              {isAnalysisLoading ? "Analysis in progress" : "Prepared for qualified review"}
               {results?.generatedAt ? ` · ${formatDate(results.generatedAt)}` : ""}
             </p>
             <h3 className="font-heading text-2xl font-bold text-white">
               {compliance.statusLabel}
             </h3>
-            <p className="font-body text-sm text-slate-300">
-              {compliance.reviewCount} flags raised across the drawing set — resolve
-              before export to reach full pass rate.
-            </p>
+            {projectData?.code_context?.resolved_summary ? (
+              <p className="font-body text-sm text-accent-cyan">
+                {projectData.code_context.resolved_summary}
+              </p>
+            ) : (
+              <p className="font-body text-sm text-slate-300">
+                {compliance.reviewCount} items need confirmation — a qualified
+                designer remains responsible before permit.
+              </p>
+            )}
             <div className="flex flex-wrap justify-center gap-3 pt-2 sm:justify-start">
               <Button
                 variant="primary"
@@ -1260,6 +1302,7 @@ export function ResultsStep({
           if (!sendForReviewMutation.isPending) {
             setIsSendForReviewOpen(false);
             setSelectedEngineerId("");
+            setReviewAcknowledgments({});
           }
         }}
         title="Send for Engineer Review"
@@ -1291,6 +1334,24 @@ export function ResultsStep({
                   label: `${engineer.name} (${engineer.email})`,
                 }))}
               />
+              <div className="space-y-2 pt-2">
+                {REVIEW_ACKNOWLEDGMENTS.map((item) => (
+                  <label key={item.id} className="flex items-start gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={Boolean(reviewAcknowledgments[item.id])}
+                      onChange={(event) =>
+                        setReviewAcknowledgments((current) => ({
+                          ...current,
+                          [item.id]: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
 
             </div>
           ) : (

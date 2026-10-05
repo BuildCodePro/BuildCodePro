@@ -1,14 +1,3 @@
-export const OCCUPANCY_TYPES = [
-  "Assembly",
-  "Business",
-  "Residential",
-  "Educational",
-  "Industrial",
-  "Mercantile",
-  "Storage",
-  "Utility",
-] as const;
-
 export const OPTIONAL_SYSTEM_OPTIONS = [
   {
     id: "sprinkler" as const,

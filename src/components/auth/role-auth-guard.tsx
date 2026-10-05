@@ -8,6 +8,8 @@ import { getDashboardPathForRole } from "@/lib/auth/session";
 import { useAuthStore } from "@/store/auth-store";
 import type { UserRole } from "@/types/auth";
 
+import { ColorSchemeSync } from "./color-scheme-sync";
+
 interface RoleAuthGuardProps {
   allowedRoles: UserRole[];
   children: React.ReactNode;
@@ -39,5 +41,10 @@ export function RoleAuthGuard({ allowedRoles, children }: RoleAuthGuardProps) {
     return null;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <ColorSchemeSync />
+      {children}
+    </>
+  );
 }

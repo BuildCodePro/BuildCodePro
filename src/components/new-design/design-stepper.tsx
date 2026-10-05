@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { DesignStep, DesignWizardStep } from "@/types/new-design";
 
@@ -16,36 +17,49 @@ export function DesignStepper({
 
   return (
     <nav aria-label="Design wizard progress" className={cn("w-full", className)}>
-      <ol className="flex w-full gap-3">
+      <ol className="flex w-full items-center gap-2">
         {steps.map((step, index) => {
           const isActive = step.id === currentStep;
           const isComplete = index < currentIndex;
-
           return (
-            <li
-              key={step.id}
-              className={cn(
-                "flex h-[41px] min-w-0 flex-1 items-center rounded-[10px] border px-[14px] transition-colors",
-                isActive
-                  ? "border-primary/30 bg-primary/5"
-                  : isComplete
-                    ? "border-emerald-200 bg-emerald-50"
-                    : "border-border bg-white",
-              )}
-            >
-              <p
-                className={cn(
-                  "truncate font-body text-sm leading-none whitespace-nowrap",
-                  isActive
-                    ? "font-semibold text-primary"
-                    : isComplete
-                      ? "font-medium text-success"
-                      : "text-stat-label",
-                )}
-              >
-                <span>{step.number}:</span>{" "}
-                <span>{step.label}</span>
-              </p>
+            <li key={step.id} className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-full font-body text-sm font-semibold",
+                    isActive || isComplete
+                      ? "bg-primary text-white"
+                      : "bg-slate-200 text-slate-500",
+                  )}
+                >
+                  {isComplete ? (
+                    <Check className="size-4" aria-hidden="true" />
+                  ) : (
+                    step.number
+                  )}
+                </span>
+                <p
+                  className={cn(
+                    "truncate font-body text-sm",
+                    isActive
+                      ? "font-semibold text-primary"
+                      : isComplete
+                        ? "font-medium text-foreground"
+                        : "text-stat-label",
+                  )}
+                >
+                  {step.label}
+                </p>
+              </div>
+              {index < steps.length - 1 ? (
+                <span
+                  className={cn(
+                    "hidden h-px min-w-4 flex-1 sm:block",
+                    index < currentIndex ? "bg-primary" : "bg-slate-200",
+                  )}
+                  aria-hidden="true"
+                />
+              ) : null}
             </li>
           );
         })}

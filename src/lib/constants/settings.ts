@@ -1,6 +1,7 @@
 export const SETTINGS_TABS = [
   { id: "profile", label: "Profile" },
   { id: "security", label: "Security" },
+  { id: "appearance", label: "Appearance" },
 ] as const;
 
 export type SettingsTabId = (typeof SETTINGS_TABS)[number]["id"];

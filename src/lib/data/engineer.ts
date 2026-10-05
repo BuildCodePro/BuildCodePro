@@ -9,6 +9,7 @@ import type { ProjectInfoFormData } from "@/types/new-design";
 
 import { DEFAULT_PERMIT_CHECKLIST } from "@/lib/constants/engineer";
 import { projectsList } from "./projects";
+import { FULL_PROTECTIVE_SIGNALING } from "@/lib/constants/system-scope";
 
 export const engineerStats: DashboardStat[] = [
   {
@@ -229,9 +230,17 @@ export function mapProjectToProjectInfo(
     projectName: project.name,
     address: project.address,
     jurisdiction: project.jurisdiction || "—",
+    ibcEdition: project.ibc_edition ?? "",
+    ifcEdition: project.ifc_edition ?? "",
+    nfpa72Edition: project.nfpa72_edition ?? "",
     squareFootage: project.square_footage ? String(project.square_footage) : "0",
     numberOfFloors: project.number_of_floors ? String(project.number_of_floors) : "0",
     occupancyType: project.occupancyType,
+    systemScope: project.system_scope ?? FULL_PROTECTIVE_SIGNALING,
+    monitoringCommunicationType: project.monitoring_communication_type ?? "",
+    preferredManufacturer: project.preferred_manufacturer ?? "",
+    preferredPanelFamily: project.preferred_panel_family ?? "",
+    bidToMinimumCode: project.bid_to_minimum_code ?? true,
     optionalSystems: {
       sprinkler: Boolean(project.sprinkler_system),
       elevator: Boolean(project.elevator),

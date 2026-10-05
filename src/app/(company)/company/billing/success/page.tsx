@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { useSubscriptionConfirmation } from "@/hooks/use-subscription-confirmation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
@@ -8,6 +10,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { useSubscriptionQuery } from "@/services/billingService";
 import { useMeQuery } from "@/services/authService";
 import { useAuthStore } from "@/store/auth-store";
+import type { AuthUser } from "@/types/auth";
 import { cn } from "@/lib/utils/cn";
 
 export default function BillingSuccessPage() {
@@ -28,52 +31,19 @@ export default function BillingSuccessPage() {
   const { refetch: refetchMe } = useMeQuery();
   const updateUser = useAuthStore((s) => s.updateUser);
 
-  useEffect(() => {
-    if (!sessionId) {
-      setStatus("error");
-      return;
-    }
-
-
-    let attempts = 0;
-    const maxAttempts = 5;
-
-    const poll = async () => {
-      attempts += 1;
-      const result = await refetch();
-
-      const isActive =
-        result.data?.subscription_status === "active" ||
-        result.data?.subscription_status === "trialing";
-
-      if (isActive) {
-        await syncMeIntoStore(result.data?.plan_code);
-        setStatus("success");
-        return;
-      }
-
-      if (attempts < maxAttempts) {
-        setTimeout(poll, 1500);
-      } else {
-
-        await syncMeIntoStore(result.data?.plan_code);
-        setStatus("success");
-      }
-    };
-
-    const syncMeIntoStore = async (planCode?: string) => {
-      try {
-        const result = await refetchMe();
+  useSubscriptionConfirmation(
+    sessionId,
+    refetch,
+    (planCode) => {
+      void refetchMe().then((result) => {
         if (result.data) {
-          updateUser({ ...result.data, plan: planCode } as any);
+          updateUser({ ...result.data, plan: planCode ?? undefined } as Partial<AuthUser>);
         }
-      } catch (error) {
-        console.error("Failed to sync profile after checkout:", error);
-      }
-    };
-
-    poll();
-  }, [sessionId]);
+      });
+      setStatus("success");
+    },
+    () => setStatus("error"),
+  );
 
   return (
     <div className="flex min-h-[70vh] w-full items-center justify-center px-4">

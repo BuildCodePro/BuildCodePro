@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   --color-primary: #e53935;
   --color-primary-hover: #d32f2f;
   --color-sidebar: #0b1220;
@@ -23,7 +23,9 @@
   --color-ai-indigo: #6366f1;
   --color-ai-violet: #8b5cf6;
   --color-ai-teal: #2dd4bf;
+}
 
+@theme inline {
   --font-heading: var(--font-dm-sans);
   --font-body: var(--font-inter);
 
@@ -31,6 +33,43 @@
   --radius-button: 10px;
   --radius-card: 16px;
   --radius-sidebar-item: 10px;
+}
+
+[data-scheme="night"] {
+  color-scheme: dark;
+  --color-white: #0b1220;
+  --color-background: #0b1220;
+  --color-foreground: #e5e7eb;
+  --color-stat-value: #e5e7eb;
+  --color-stat-label: #94a3b8;
+  --color-muted-foreground: #94a3b8;
+  --color-border: #1f2a3d;
+  --color-input-border: #334155;
+  --color-surface: #111a2b;
+  --color-primary: #ef5350;
+  --color-primary-hover: #ff8a80;
+  --color-sidebar: #050a14;
+  --color-slate-50: #111a2b;
+  --color-slate-100: #172236;
+  --color-slate-200: #1f2a3d;
+  --color-red-50: #2a1416;
+  --color-amber-50: #2a1f0f;
+  --color-amber-100: #3a2a10;
+  --color-sky-50: #10223a;
+  --color-sky-100: #12304f;
+}
+
+[data-scheme="slate"] {
+  --color-background: #ffffff;
+  --color-surface: #f1f5f9;
+  --color-foreground: #0f172a;
+  --color-stat-value: #0f172a;
+  --color-stat-label: #64748b;
+  --color-border: #e2e8f0;
+  --color-sidebar: #1e293b;
+  --color-primary: #1e293b;
+  --color-primary-hover: #0f172a;
+  --color-sidebar-active: #475569;
 }
 
 @layer base {

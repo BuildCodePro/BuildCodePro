@@ -10,9 +10,17 @@ export type CreateProjectDto = {
   name: string;
   address?: string;
   jurisdiction?: string;
+  ibc_edition?: string;
+  ifc_edition?: string;
+  nfpa72_edition?: string;
   square_footage?: number;
   number_of_floors?: number;
   occupancy_type?: string;
+  system_scope?: string;
+  bid_to_minimum_code?: boolean;
+  monitoring_communication_type?: string;
+  preferred_manufacturer?: string;
+  preferred_panel_family?: string;
   sprinkler_system?: boolean;
   elevator?: boolean;
   duct_detectors?: boolean;
@@ -30,9 +38,17 @@ export interface ProjectDto {
   name: string;
   address: string;
   jurisdiction: string;
+  ibc_edition: string | null;
+  ifc_edition: string | null;
+  nfpa72_edition: string | null;
   square_footage: number;
   number_of_floors: number;
   occupancy_type: string;
+  system_scope: string;
+  bid_to_minimum_code: boolean;
+  monitoring_communication_type: string | null;
+  preferred_manufacturer: string | null;
+  preferred_panel_family: string | null;
   sprinkler_system: boolean;
   elevator: boolean;
   duct_detectors: boolean;
@@ -47,6 +63,24 @@ export interface ProjectDto {
   updated_at: string;
   engineer_notes: string;
   engineer_reviewed_at: string;
+  is_design_locked?: boolean;
+  design_locked_at?: string | null;
+  review_acknowledgments?: string[];
+  code_context?: {
+    permit_date: string;
+    match_level: string;
+    parsed_city: string | null;
+    parsed_state: string | null;
+    parsed_postal_code: string | null;
+    ahj_name: string;
+    ibc_edition: string;
+    ifc_edition: string;
+    nfpa72_edition: string;
+    amendment_label: string;
+    source_citation: string;
+    resolved_summary: string;
+    jurisdiction_label: string;
+  } | null;
 }
 
 export interface PaginatedProjectsResponse {
@@ -84,7 +118,24 @@ export interface EngineersResponse {
 
 export interface SendForReviewRequest {
   engineer_user_id: string;
+  acknowledgments: string[];
 }
+
+export const REVIEW_ACKNOWLEDGMENTS = [
+  {
+    id: "qualified_person_responsible",
+    label:
+      "A qualified person remains responsible for confirming project-specific requirements.",
+  },
+  {
+    id: "not_a_sealed_document",
+    label: "This package is AI-assisted and is not a sealed engineering document.",
+  },
+  {
+    id: "assumptions_reviewed",
+    label: "I have reviewed the listed design assumptions and calculation sources.",
+  },
+] as const;
 
 // export type SendForReviewResponse = ProjectDto;
 
@@ -101,6 +152,9 @@ export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardP
     lastUpdated: project.updated_at,
     createdAt: project.created_at,
     jurisdiction: project.jurisdiction,
+    ibc_edition: project.ibc_edition,
+    ifc_edition: project.ifc_edition,
+    nfpa72_edition: project.nfpa72_edition,
     square_footage: project.square_footage,
     number_of_floors: project.number_of_floors,
     sprinkler_system: project.sprinkler_system,
@@ -108,6 +162,11 @@ export function mapProjectDtoToDashboardProject(project: ProjectDto): DashboardP
     duct_detectors: project.duct_detectors,
     voice_evacuation: project.voice_evacuation,
     special_notes: project.special_notes,
+    system_scope: project.system_scope,
+    bid_to_minimum_code: project.bid_to_minimum_code,
+    monitoring_communication_type: project.monitoring_communication_type,
+    preferred_manufacturer: project.preferred_manufacturer,
+    preferred_panel_family: project.preferred_panel_family,
     current_step: project.current_step,
   };
 }

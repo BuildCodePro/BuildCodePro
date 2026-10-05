@@ -15,17 +15,19 @@ export function DesignRecommendationsPanel({
   drawings,
 }: DesignRecommendationsPanelProps) {
   return (
-    <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-      <FloorPlanPreview design_image={design_image} drawings={drawings} />
-
-      <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_320px]">
+      <div className="min-h-[500px]">
+        <FloorPlanPreview design_image={design_image} drawings={drawings} />
+      </div>
+      <div className="space-y-3 overflow-y-auto max-h-[80vh]">
         <div>
-          <h3 className="text-section-title font-body">AI Recommendations</h3>
+          <h3 className="text-section-title font-body">Design recommendations</h3>
           <p className="mt-1 font-body text-xs text-stat-label">
-            Based on NFPA 72 compliance analysis
+            The uploaded drawing is shown for reference only.
+            Recommendations below are generated from the analysis and remain
+            draft until a qualified reviewer confirms them.
           </p>
         </div>
-
         <RecommendationCardList recommendations={recommendations} />
       </div>
     </div>

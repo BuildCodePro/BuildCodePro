@@ -10,6 +10,7 @@ interface ResultsProjectHeaderProps {
   generatedAt?: string;
   onExport?: () => void;
   className?: string;
+  codesStatement?: string | null;
 }
 
 export function ResultsProjectHeader({
@@ -18,6 +19,7 @@ export function ResultsProjectHeader({
   generatedAt,
   onExport,
   className,
+  codesStatement,
 }: ResultsProjectHeaderProps) {
   return (
     <section
@@ -29,7 +31,7 @@ export function ResultsProjectHeader({
       <div className="min-w-0 space-y-3">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 font-body text-xs font-medium text-emerald-400">
           <Check className="size-3.5" aria-hidden="true" />
-          Completed
+          Prepared for qualified review
         </span>
 
         <div className="space-y-2">
@@ -37,6 +39,9 @@ export function ResultsProjectHeader({
             {projectName}
           </h2>
           <p className="font-body text-sm text-slate-400">{metadata}</p>
+          {codesStatement ? (
+            <p className="font-body text-sm text-accent-cyan">{codesStatement}</p>
+          ) : null}
         </div>
       </div>
 

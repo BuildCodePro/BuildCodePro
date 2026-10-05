@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
+import { SUBSCRIPTION_UPDATED_EVENT } from "@/hooks/use-subscription-confirmation";
 import { useAuthStore } from "@/store/auth-store";
 
 export interface WsNotificationData {
@@ -25,7 +26,8 @@ type WsIncomingEvent =
     unread_count: number;
     read_at: string;
   }
-  | { event: "pong" };
+  | { event: "pong" }
+  | { event: "subscription.updated"; subscription_status: string | null; plan_code: string | null };
 
 function getWebSocketUrl(token: string): string {
   const apiUrl =
@@ -83,6 +85,11 @@ export function useNotificationsSocket() {
             setUnreadCount(payload.unread_count);
             setLastNotification(payload.data);
             invalidateNotifications();
+          } else if (payload.event === "subscription.updated") {
+            queryClient.invalidateQueries({ queryKey: ["billing"] });
+            window.dispatchEvent(
+              new CustomEvent(SUBSCRIPTION_UPDATED_EVENT, { detail: payload }),
+            );
           } else if (payload.event === "read") {
             setUnreadCount(payload.unread_count);
             invalidateNotifications();
@@ -115,7 +122,7 @@ export function useNotificationsSocket() {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [token, invalidateNotifications]);
+  }, [token, invalidateNotifications, queryClient]);
 
   const markRead = useCallback((notificationIds: string[]) => {
     const ws = socketRef.current;

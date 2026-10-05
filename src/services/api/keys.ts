@@ -23,7 +23,10 @@ export const QUERY_KEYS = {
     PROJECTS: {
         LIST: (params?: Record<string, unknown>) => params ? ['projects', 'list', params] : ['projects', 'list'],
         DETAIL: (projectId: string) => ['projects', 'detail', projectId],
+        JURISDICTION_RESOLUTION: (address: string) =>
+            ['projects', 'jurisdiction-resolution', address] as const,
         SEND_FOR_REVIEW: (projectId: string) => ['projects', projectId, 'send-for-review'] as const,
+        INTAKE: (projectId: string) => ['projects', projectId, 'intake'] as const,
 
 
         DRAWINGS: {
@@ -44,6 +47,7 @@ export const QUERY_KEYS = {
         BOM: {
             GET: (projectId: string) => ["projects", projectId, "bom"] as const,
             UPDATE_LINE_PRICE: (projectId: string, lineId: string) => ["projects", projectId, "bom", "lines", lineId] as const,
+            LINE_HISTORY: (projectId: string, lineId: string) => ["projects", projectId, "bom", "lines", lineId, "history"] as const,
         },
 
         EXPORTS: {

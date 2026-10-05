@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { CircularProgress } from "@/components/ui/circular-progress";
 import { getAnalysisInputRows } from "@/lib/utils/format-analysis-inputs";
 
 import type {
@@ -30,6 +29,8 @@ import {
 
 import { toast } from "sonner";
 import { AnalysisInputsPanel } from "./analysis-inputs-panel";
+import { EngineCalculationCards } from "./engine-calculation-cards";
+import { useGetComplianceChecklistQuery } from "@/services/analysisResultsService";
 
 interface AiAnalysisStepProps {
   files: UploadedFile[];
@@ -41,6 +42,18 @@ interface AiAnalysisStepProps {
    * It is NOT used by the WebSocket event handling anymore.
    */
   jobId: string | null;
+
+  /**
+   * True only when the user just clicked "Confirm and Calculate".
+   * Otherwise the step watches the latest job and never starts a new run.
+   */
+  startNewRun?: boolean;
+
+  /**
+   * Called once the backend confirms the new run, so a remount
+   * or reconnect watches it instead of starting another one.
+   */
+  onRunStarted?: () => void;
 
   onComplete?: () => void;
   onCancel?: () => void;
@@ -114,6 +127,8 @@ export function AiAnalysisStep({
   projectInfo,
   projectId,
   jobId,
+  startNewRun = false,
+  onRunStarted,
   onComplete,
   onCancel,
 }: AiAnalysisStepProps) {
@@ -152,6 +167,10 @@ export function AiAnalysisStep({
       "[AiAnalysisStep] WebSocket event:",
       event,
     );
+
+    if (startNewRun && event.job_id) {
+      onRunStarted?.();
+    }
 
     /**
      * Backend explicitly reported failure.
@@ -354,6 +373,7 @@ export function AiAnalysisStep({
   } = useAnalysisWebSocket({
     projectId,
     isRetry: isRetryState,
+    watchOnly: !startNewRun && !isRetryState,
 
     onEvent: handleEvent,
 
@@ -391,7 +411,13 @@ export function AiAnalysisStep({
    *
    * Prefer backend message.
    */
+  const failureMessage =
+    analysisStatus === "failed"
+      ? latestEvent?.error_message || latestEvent?.message || "The analysis failed. Retry to run it again."
+      : null;
+
   const statusMessage =
+    failureMessage ||
     latestEvent?.message ||
     (connectionStatus === "connecting"
       ? "Connecting to analysis engine…"
@@ -510,63 +536,56 @@ export function AiAnalysisStep({
 
   const canCancel = isRunning;
 
+  const complianceQuery = useGetComplianceChecklistQuery(
+    isComplete && projectId ? projectId : undefined,
+  );
+
   return (
-    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_280px]">
       <Card>
-        <CardContent className="flex flex-col items-center gap-6 py-8">
-          <span className="inline-flex items-center gap-2 rounded-full border border-ai-cyan/30 bg-ai-cyan/10 px-4 py-1.5 font-body text-sm font-medium text-ai-cyan">
-            <Sparkles
-              className="size-3.5"
-              aria-hidden="true"
-            />
-
-            {isComplete
-              ? "AI Analysis Complete"
-              : "AI Analysis Running"}
-          </span>
-
-          <div className="max-w-lg space-y-2 text-center">
-            <h2 className="font-heading text-2xl font-bold text-foreground">
-              {isComplete
-                ? "Analysis complete"
-                : "Analyzing your drawings..."}
-            </h2>
-
-            <p className="font-body text-sm leading-relaxed text-stat-label">
-              Our AI engine is processing your
-              construction drawings and applying
-              NFPA 72 compliance rules to generate
-              an accurate fire alarm design.
-            </p>
+        <CardContent className="flex flex-col gap-5 py-6">
+          <div className="flex items-start gap-3">
+            {isComplete ? (
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                <Check className="size-5 text-success" aria-hidden="true" />
+              </span>
+            ) : (
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold text-primary">
+                {progress}%
+              </span>
+            )}
+            <div className="space-y-1">
+              <h2 className="font-heading text-xl font-bold text-foreground">
+                {isComplete ? "Extraction complete" : failureMessage ? "Analysis failed" : "AI analysis"}
+              </h2>
+              <p className="font-body text-sm text-stat-label">
+                {isComplete
+                  ? "Building context is ready for the calculation engine."
+                  : "The model classifies the drawings. It does not invent battery or voltage-drop math."}
+              </p>
+            </div>
           </div>
-
-          <CircularProgress
-            value={progress}
-            progressClassName="text-ai-cyan"
-          />
-
           {finalDisplayTasks.length > 0 ? (
-            <>
-              <AnalysisProgressTasks
-                tasks={toAnalysisStepTasks(
-                  finalDisplayTasks,
-                )}
-                className="w-full max-w-xl"
-              />
-
-              {statusMessage ? (
-                <p className="font-body text-xs text-stat-label/70">
-                  {statusMessage}
-                </p>
-              ) : null}
-            </>
+            <AnalysisProgressTasks
+              tasks={toAnalysisStepTasks(finalDisplayTasks)}
+              className="w-full"
+            />
           ) : (
             <p className="font-body text-sm text-stat-label animate-pulse">
               {statusMessage}
             </p>
           )}
+          {statusMessage && finalDisplayTasks.length > 0 ? (
+            <p className="font-body text-xs text-stat-label/70">{statusMessage}</p>
+          ) : null}
+          <p className="font-body text-xs text-stat-label">AI analysis</p>
         </CardContent>
       </Card>
+
+      <EngineCalculationCards
+        isComplete={isComplete}
+        calculations={complianceQuery.data?.calculations}
+      />
 
       <AnalysisInputsPanel
         rows={inputRows}

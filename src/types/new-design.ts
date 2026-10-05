@@ -33,9 +33,17 @@ export interface ProjectInfoFormData {
   projectName: string;
   address: string;
   jurisdiction: string;
+  ibcEdition: string;
+  ifcEdition: string;
+  nfpa72Edition: string;
   squareFootage: string;
   numberOfFloors: string;
   occupancyType: string;
+  systemScope: string;
+  monitoringCommunicationType: string;
+  preferredManufacturer: string;
+  preferredPanelFamily: string;
+  bidToMinimumCode: boolean;
   optionalSystems: {
     sprinkler: boolean;
     elevator: boolean;
@@ -192,9 +200,17 @@ export const DEFAULT_PROJECT_INFO: ProjectInfoFormData = {
   projectName: "",
   address: "",
   jurisdiction: "",
+  ibcEdition: "",
+  ifcEdition: "",
+  nfpa72Edition: "",
   squareFootage: "",
   numberOfFloors: "",
   occupancyType: "",
+  systemScope: "full_protective_signaling",
+  monitoringCommunicationType: "",
+  preferredManufacturer: "",
+  preferredPanelFamily: "",
+  bidToMinimumCode: true,
   optionalSystems: {
     sprinkler: false,
     elevator: false,

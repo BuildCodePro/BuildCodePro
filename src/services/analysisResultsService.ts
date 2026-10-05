@@ -11,14 +11,16 @@ import type {
 // --- API Functions ---
 
 const getComplianceChecklistApi = async (projectId: string): Promise<ComplianceChecklistApiResponse> => {
-  return apiRequest<ComplianceChecklistApiResponse>(API_ENDPOINTS.PROJECTS.ANALYSIS.COMPLIANCE(projectId), {
+  const endpoint = `${API_ENDPOINTS.PROJECTS.ANALYSIS.COMPLIANCE(projectId)}?include_calculations=true`;
+  return apiRequest<ComplianceChecklistApiResponse>(endpoint, {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
   });
 };
 
 const regenerateComplianceChecklistApi = async (projectId: string): Promise<ComplianceChecklistApiResponse> => {
-  return apiRequest<ComplianceChecklistApiResponse>(API_ENDPOINTS.PROJECTS.ANALYSIS.COMPLIANCE_REGENERATE(projectId), {
+  const endpoint = `${API_ENDPOINTS.PROJECTS.ANALYSIS.COMPLIANCE_REGENERATE(projectId)}?include_calculations=true`;
+  return apiRequest<ComplianceChecklistApiResponse>(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });

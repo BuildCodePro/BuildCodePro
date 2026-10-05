@@ -123,7 +123,8 @@ export function FileDropzone({
             Upload construction drawings
           </h3>
           <p className="mt-2 max-w-md font-body text-sm text-stat-label">
-            Drag and drop PDF, PNG, JPG, JPEG or WEBP files here.
+            Upload your drawings. We extract occupancy, elevators, and sprinklers
+            from the plans — not from extra Project Info fields.
           </p>
           <p className="mt-1 font-body text-xs text-stat-label">
             Max file size: 50 MB per file • Multiple files supported

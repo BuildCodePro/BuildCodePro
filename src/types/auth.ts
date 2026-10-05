@@ -1,3 +1,5 @@
+import type { ColorSchemeId } from "@/lib/constants/color-scheme";
+
 export type UserRole = "company_owner" | "super_admin" | "estimator" | "engineer";
 
 export interface LoginFormData {
@@ -51,6 +53,7 @@ export interface AuthUser {
   pdf_export?: boolean
   team_accounts?: boolean
   companyName?: string;
+  colorScheme?: ColorSchemeId;
   is_verified?: boolean;
   is_active?: boolean;
   is_owner?: boolean;

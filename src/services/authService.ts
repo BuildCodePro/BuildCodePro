@@ -127,6 +127,7 @@ export interface MeResponse {
   is_verified: boolean;
   is_active: boolean;
   is_owner: boolean;
+  color_scheme?: string;
   company_id: string;
   company: Company;
   created_at: string;

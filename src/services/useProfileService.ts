@@ -3,6 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "./api/endpoints";
 import { QUERY_KEYS } from "./api/keys";
 import { useAuthStore } from "@/store/auth-store";
+import type { ColorSchemeId } from "@/lib/constants/color-scheme";
 
 // --- Types ---
 
@@ -30,12 +31,15 @@ export interface ProfileResponse {
     email: string;
     full_name: string;
     company_name: string;
+    is_owner?: boolean;
+    color_scheme?: ColorSchemeId;
     plan: CurrentPlan;
     modules: ModuleFeatures;
 }
 
 export interface UpdateProfileRequest {
-    full_name: string;
+    full_name?: string;
+    color_scheme?: ColorSchemeId;
 }
 
 export interface RequestEmailChangeRequest {
@@ -124,6 +128,7 @@ const syncProfileToStore = (
         email: profile.email,
         avatarUrl: profile.avatar_url,
         companyName: profile.company_name,
+        ...(profile.color_scheme ? { colorScheme: profile.color_scheme } : {}),
         plan: profile.plan,
         modules: profile.modules,
     });

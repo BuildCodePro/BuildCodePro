@@ -50,6 +50,9 @@ export interface Drawing {
     file_size: number;
     status: string;
     file_url: string;
+    geometry_ingest_status?: string;
+    geometry_pages_total?: number;
+    geometry_pages_ready?: number;
     created_at: string;
     updated_at: string;
 }
@@ -69,6 +72,18 @@ export interface AnalysisResultResponse {
 
 // --- Job list types ---
 
+export interface ConstructionExtract {
+    occupancy_type: string | null;
+    occupancy_evidence: string | null;
+    occupancy_found: boolean;
+    sprinkler_system: boolean;
+    sprinkler_found: boolean;
+    elevator: boolean;
+    elevator_found: boolean;
+    duct_detectors: boolean;
+    duct_found: boolean;
+}
+
 export type AnalysisJobStatus =
     | "pending"
     | "running"
@@ -85,6 +100,8 @@ export interface AnalysisJobItem {
     error_message: string | null;
     pages_total: number | null;
     pages_processed: number | null;
+    pages_analyzed: number | null;
+    construction_extract?: ConstructionExtract | null;
     created_at: string;
     updated_at: string;
     completed_at: string | null;
@@ -156,13 +173,11 @@ export const useAnalysisResultQuery = (
 
 export const useAnalysisJobsQuery = (
     projectId: string | null | undefined,
-    options?: { refetchInterval?: number | false | ((query: any) => number | false | undefined) }
 ) => {
     return useQueryAlias({
         queryKey: QUERY_KEYS.PROJECTS.ANALYSIS.JOBS(projectId as string),
         queryFn: () => getAnalysisJobsApi(projectId as string),
         enabled: !!projectId,
-        ...options,
     });
 };
 

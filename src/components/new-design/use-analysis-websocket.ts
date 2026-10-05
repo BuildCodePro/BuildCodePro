@@ -9,6 +9,7 @@ export interface AnalysisWsEvent {
     job_id: string;
     event?: string; // e.g. "started", "progress", "completed"
     message?: string; // human-readable status text, e.g. "Analysis started."
+    error_message?: string;
     step?: string;
     current_step?: string;
     progress_pct: number;
@@ -32,6 +33,7 @@ export type WsConnectionStatus =
 interface UseAnalysisWebSocketOptions {
     projectId: string | null;
     isRetry?: boolean;
+    watchOnly?: boolean;
     onEvent?: (event: AnalysisWsEvent) => void;
     onComplete?: () => void;
     onError?: (error: Event | string) => void;
@@ -388,9 +390,13 @@ function releaseConnection(
     }, CLOSE_GRACE_MS);
 }
 
+const MAX_RECONNECT_ATTEMPTS = 20;
+const RECONNECT_DELAY_MS = 3000;
+
 export function useAnalysisWebSocket({
     projectId,
     isRetry,
+    watchOnly,
     onEvent,
     onComplete,
     onError,
@@ -408,6 +414,9 @@ export function useAnalysisWebSocket({
 
     const [isComplete, setIsComplete] =
         useState(false);
+
+    const [reconnectAttempt, setReconnectAttempt] =
+        useState(0);
 
     /**
      * Always keep latest callbacks.
@@ -484,9 +493,11 @@ export function useAnalysisWebSocket({
 
         hasCompletedRef.current = false;
 
-        const endpoint = isRetry
-            ? "/analysis/retry/ws"
-            : "/analysis/ws";
+        const endpoint = reconnectAttempt > 0 || watchOnly
+            ? "/analysis/progress/ws"
+            : isRetry
+                ? "/analysis/retry/ws"
+                : "/analysis/ws";
 
         /**
          * Normal analysis and retry analysis intentionally
@@ -678,6 +689,24 @@ export function useAnalysisWebSocket({
                 setConnectionStatus(
                     "disconnected",
                 );
+
+                /**
+                 * The server dropped the socket before the job finished
+                 * (deploy, restart, network). Re-attach in watch-only mode
+                 * so the screen still sees completion or failure.
+                 */
+                if (
+                    !hasCompletedRef.current &&
+                    event.code !== 1000 &&
+                    event.code !== 1008 &&
+                    reconnectAttempt < MAX_RECONNECT_ATTEMPTS
+                ) {
+                    setTimeout(() => {
+                        if (subscriptionIdRef.current === subscriptionId) {
+                            setReconnectAttempt((attempt) => attempt + 1);
+                        }
+                    }, RECONNECT_DELAY_MS);
+                }
             },
         };
 
@@ -720,7 +749,7 @@ export function useAnalysisWebSocket({
                 currentKeyRef.current = null;
             }
         };
-    }, [projectId, isRetry]);
+    }, [projectId, isRetry, watchOnly, reconnectAttempt]);
 
     return {
         connectionStatus,

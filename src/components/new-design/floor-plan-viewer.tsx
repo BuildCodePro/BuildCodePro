@@ -1,34 +1,19 @@
 "use client";
 
-import {
-  ExternalLink,
-  Maximize2,
-  Minus,
-  Plus,
-  RotateCcw,
-  X,
-  ZoomIn,
-} from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-
-const FLOOR_PLAN_SRC = "/images/floor-plan-preview.png";
-const IMAGE_WIDTH = 540;
-const IMAGE_HEIGHT = 480;
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 5;
-const ZOOM_STEP = 0.25;
-const WHEEL_ZOOM_STEP = 0.12;
+import { ZoomControls } from "./floor-plan-zoom-controls";
+import { PlanViewport } from "./floor-plan-viewport";
+import {
+  FALLBACK_NATURAL_SIZE,
+  usePlanTransform,
+  useViewportSize,
+  type ViewportSize,
+} from "./floor-plan-viewer-transform";
 
 interface FloorPlanViewerProps {
   className?: string;
@@ -36,613 +21,16 @@ interface FloorPlanViewerProps {
   design_image?: string;
 }
 
-interface PanOffset {
-  x: number;
-  y: number;
-}
-
-interface ViewportSize {
-  width: number;
-  height: number;
-}
-
-interface DragState {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  panX: number;
-  panY: number;
-}
-
-function clampZoom(value: number) {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
-}
-
-function getFittedImageSize(viewport: ViewportSize) {
-  if (viewport.width === 0 || viewport.height === 0) {
-    return { width: IMAGE_WIDTH, height: IMAGE_HEIGHT };
-  }
-
-  const scale = Math.min(
-    viewport.width / IMAGE_WIDTH,
-    viewport.height / IMAGE_HEIGHT,
-  );
-
-  return {
-    width: IMAGE_WIDTH * scale,
-    height: IMAGE_HEIGHT * scale,
-  };
-}
-
-function clampPan(
-  pan: PanOffset,
-  zoom: number,
-  viewport: ViewportSize,
-): PanOffset {
-  const fitted = getFittedImageSize(viewport);
-  const scaledWidth = fitted.width * zoom;
-  const scaledHeight = fitted.height * zoom;
-
-  const maxX = Math.max(0, (scaledWidth - viewport.width) / 2);
-  const maxY = Math.max(0, (scaledHeight - viewport.height) / 2);
-
-  return {
-    x: Math.min(maxX, Math.max(-maxX, pan.x)),
-    y: Math.min(maxY, Math.max(-maxY, pan.y)),
-  };
-}
-
-function ZoomControls({
-  zoom,
-  onZoomIn,
-  onZoomOut,
-  onReset,
-  onExpand,
-  showExpand,
-  dark = false,
-}: {
-  zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onReset: () => void;
-  onExpand?: () => void;
-  showExpand?: boolean;
-  dark?: boolean;
-}) {
-  const shellClass = dark
-    ? "border-white/15 bg-white/10"
-    : "border-border bg-white";
-  const buttonClass = dark
-    ? "text-white hover:bg-white/10"
-    : undefined;
-  const labelClass = dark ? "text-white" : "text-foreground";
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div
-        className={cn(
-          "inline-flex items-center rounded-[10px] border p-1 shadow-sm",
-          shellClass,
-        )}
-      >
-        <button
-          type="button"
-          onClick={onZoomOut}
-          disabled={zoom <= MIN_ZOOM}
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "size-8 max-w-none rounded-[8px] p-0 disabled:opacity-40",
-            buttonClass,
-          )}
-          aria-label="Zoom out"
-        >
-          <Minus className="size-4" />
-        </button>
-        <span
-          className={cn(
-            "min-w-13 px-2 text-center font-body text-xs font-medium",
-            labelClass,
-          )}
-        >
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={onZoomIn}
-          disabled={zoom >= MAX_ZOOM}
-          className={cn(
-            buttonVariants({ variant: "ghost", size: "sm" }),
-            "size-8 max-w-none rounded-[8px] p-0 disabled:opacity-40",
-            buttonClass,
-          )}
-          aria-label="Zoom in"
-        >
-          <Plus className="size-4" />
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onReset}
-        className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "h-8 max-w-none gap-1.5 rounded-[8px] px-3 text-xs",
-          dark && "border-white/20 bg-transparent text-white hover:bg-white/10",
-        )}
-      >
-        <RotateCcw className="size-3.5" />
-        Reset
-      </button>
-
-      {showExpand && onExpand ? (
-        <button
-          type="button"
-          onClick={onExpand}
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "h-8 max-w-none gap-1.5 rounded-[8px] px-3 text-xs",
-          )}
-        >
-          <Maximize2 className="size-3.5" />
-          Full Screen
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-function PlanViewport({
-  zoom,
-  design_image,
-  pan,
-  viewportSize,
-  isDragging,
-  fullscreen = false,
-  onPanChange,
-  onDragStart,
-  onDragEnd,
-  onWheelZoom,
-  onDoubleClickZoom,
-}: {
-  zoom: number;
-  pan: PanOffset;
-  design_image?: string;
-  viewportSize: ViewportSize;
-  isDragging: boolean;
-  fullscreen?: boolean;
-  onPanChange: (offset: PanOffset) => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  onWheelZoom: (delta: number, localX: number, localY: number) => void;
-  onDoubleClickZoom: (localX: number, localY: number) => void;
-}) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<DragState | null>(null);
-
-  // NEW: track whether the image actually failed to load so we can show
-  // a visible fallback instead of silently rendering nothing.
-  const [imgFailed, setImgFailed] = useState(false);
-
-  // Reset the failure flag whenever the source changes so a new valid URL
-  // gets a fresh chance to load.
-  useEffect(() => {
-    setImgFailed(false);
-  }, [design_image]);
-
-  const getLocalPoint = (clientX: number, clientY: number) => {
-    const bounds = viewportRef.current?.getBoundingClientRect();
-    if (!bounds) {
-      return {
-        x: viewportSize.width / 2,
-        y: viewportSize.height / 2,
-      };
-    }
-
-    return {
-      x: clientX - bounds.left,
-      y: clientY - bounds.top,
-    };
-  };
-
-  useEffect(() => {
-    const node = viewportRef.current;
-    if (!node) {
-      return;
-    }
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const delta = event.deltaY > 0 ? -WHEEL_ZOOM_STEP : WHEEL_ZOOM_STEP;
-      const point = getLocalPoint(event.clientX, event.clientY);
-      onWheelZoom(delta, point.x, point.y);
-    };
-
-    const preventDrag = (event: DragEvent) => {
-      event.preventDefault();
-    };
-
-    node.addEventListener("wheel", onWheel, { passive: false });
-    node.addEventListener("dragstart", preventDrag);
-
-    return () => {
-      node.removeEventListener("wheel", onWheel);
-      node.removeEventListener("dragstart", preventDrag);
-    };
-  }, [onWheelZoom, viewportSize.height, viewportSize.width]);
-
-  const updatePanFromPointer = useCallback(
-    (clientX: number, clientY: number) => {
-      const drag = dragRef.current;
-      if (!drag) {
-        return;
-      }
-
-      const nextPan = clampPan(
-        {
-          x: drag.panX + (clientX - drag.startX),
-          y: drag.panY + (clientY - drag.startY),
-        },
-        zoom,
-        viewportSize,
-      );
-      onPanChange(nextPan);
-    },
-    [onPanChange, viewportSize, zoom],
-  );
-
-  const finishDrag = useCallback(
-    (pointerId: number) => {
-      const drag = dragRef.current;
-      if (!drag || drag.pointerId !== pointerId) {
-        return;
-      }
-
-      dragRef.current = null;
-      onDragEnd();
-    },
-    [onDragEnd],
-  );
-
-  useEffect(() => {
-    if (!isDragging) {
-      return;
-    }
-
-    const onDocumentPointerMove = (event: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-
-      event.preventDefault();
-      updatePanFromPointer(event.clientX, event.clientY);
-    };
-
-    const onDocumentPointerEnd = (event: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag || event.pointerId !== drag.pointerId) {
-        return;
-      }
-
-      event.preventDefault();
-      finishDrag(event.pointerId);
-    };
-
-    document.addEventListener("pointermove", onDocumentPointerMove);
-    document.addEventListener("pointerup", onDocumentPointerEnd);
-    document.addEventListener("pointercancel", onDocumentPointerEnd);
-
-    return () => {
-      document.removeEventListener("pointermove", onDocumentPointerMove);
-      document.removeEventListener("pointerup", onDocumentPointerEnd);
-      document.removeEventListener("pointercancel", onDocumentPointerEnd);
-    };
-  }, [finishDrag, isDragging, updatePanFromPointer]);
-
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || zoom <= MIN_ZOOM) {
-      return;
-    }
-
-    event.preventDefault();
-
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      panX: pan.x,
-      panY: pan.y,
-    };
-    onDragStart();
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) {
-      return;
-    }
-
-    event.preventDefault();
-    updatePanFromPointer(event.clientX, event.clientY);
-  };
-
-  const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    finishDrag(event.pointerId);
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-
-  const handleDoubleClick = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const point = getLocalPoint(event.clientX, event.clientY);
-    onDoubleClickZoom(point.x, point.y);
-  };
-
-  const fitted = getFittedImageSize(viewportSize);
-
-  const isPdf = design_image
-    ? (design_image.toLowerCase().includes(".pdf") || design_image.toLowerCase().includes("application/pdf"))
-    : false;
-
-  if (isPdf && design_image) {
-    return (
-      <div
-        className={cn(
-          "relative overflow-hidden bg-slate-900 flex flex-col",
-          fullscreen ? "absolute inset-0" : "min-h-[360px] h-[480px] rounded-[12px] border border-border"
-        )}
-      >
-        <iframe
-          src={design_image}
-          title="PDF Drawing Document Preview"
-          className="w-full flex-1 border-0 bg-white"
-        />
-        <div className="flex items-center justify-between bg-slate-950 px-4 py-2 text-xs text-white shrink-0">
-          <span>PDF Document View</span>
-          <a
-            href={design_image}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            Open Document in New Tab
-            <ExternalLink className="size-3.5" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      ref={viewportRef}
-      className={cn(
-        "relative overflow-hidden bg-[#0a2463] select-none",
-        fullscreen ? "absolute inset-0" : "min-h-[280px] rounded-[12px] border border-border sm:min-h-[360px]",
-        zoom > MIN_ZOOM
-          ? isDragging
-            ? "cursor-grabbing"
-            : "cursor-grab"
-          : "cursor-zoom-in",
-      )}
-      style={{ touchAction: "none", WebkitUserSelect: "none" }}
-      onDragStart={(event) => event.preventDefault()}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
-      onDoubleClick={handleDoubleClick}
-      role="img"
-      aria-label={`Floor plan preview at ${Math.round(zoom * 100)} percent zoom`}
-    >
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div
-          className="pointer-events-none will-change-transform motion-reduce:transition-none"
-          style={{
-            transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-            transformOrigin: "center center",
-          }}
-        >
-          {design_image && !imgFailed ? (
-            <img
-              src={design_image}
-              alt="Floor plan blueprint preview"
-              width={IMAGE_WIDTH}
-              height={IMAGE_HEIGHT}
-              draggable={false}
-              onDragStart={(event) => event.preventDefault()}
-              onError={(event) => {
-                // Surfaces broken/blocked URLs instead of silently
-                // showing an empty background. Check this log for the
-                // actual failing URL (404, CORS, wrong domain, etc).
-                console.error(
-                  "FloorPlanViewer: failed to load design_image:",
-                  design_image,
-                  event.currentTarget.src,
-                );
-                setImgFailed(true);
-              }}
-              className="pointer-events-none block max-w-none select-none [webkit-user-drag:none]"
-              style={{
-                width: fitted.width,
-                height: fitted.height,
-              }}
-            />
-          ) : (
-            // Visible fallback so a bad URL is obvious instead of just
-            // showing the dark blue background with nothing on it.
-            <div
-              className="flex items-center justify-center rounded-md border border-white/20 bg-white/5 font-body text-xs text-white/70"
-              style={{ width: fitted.width, height: fitted.height }}
-            >
-              {design_image ? "Image failed to load" : "No image provided"}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
-        <div className="rounded-full bg-black/45 px-2.5 py-1 font-body text-[11px] text-white backdrop-blur-sm">
-          {fullscreen ? "Full screen" : "Preview"} · Double-click to zoom
-        </div>
-        {zoom <= MIN_ZOOM ? (
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-1 font-body text-[11px] text-white backdrop-blur-sm">
-            <ZoomIn className="size-3" aria-hidden="true" />
-            Scroll or use + / −
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function usePlanTransform(viewportSize: ViewportSize) {
-  const [zoom, setZoom] = useState(MIN_ZOOM);
-  const [pan, setPan] = useState<PanOffset>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-
-  const applyPan = useCallback(
-    (nextPan: PanOffset, nextZoom = zoom) => {
-      setPan(clampPan(nextPan, nextZoom, viewportSize));
-    },
-    [viewportSize, zoom],
-  );
-
-  const resetView = useCallback(() => {
-    setZoom(MIN_ZOOM);
-    setPan({ x: 0, y: 0 });
-  }, []);
-
-  const zoomAtPoint = useCallback(
-    (nextZoom: number, localX: number, localY: number) => {
-      const clamped = clampZoom(nextZoom);
-      if (clamped === zoom) {
-        return;
-      }
-
-      if (clamped === MIN_ZOOM) {
-        setZoom(MIN_ZOOM);
-        setPan({ x: 0, y: 0 });
-        return;
-      }
-
-      if (viewportSize.width === 0 || viewportSize.height === 0) {
-        setZoom(clamped);
-        return;
-      }
-
-      const centerX = viewportSize.width / 2;
-      const centerY = viewportSize.height / 2;
-      const ratio = clamped / zoom;
-
-      const nextPan = {
-        x: (pan.x - (localX - centerX)) * ratio + (localX - centerX),
-        y: (pan.y - (localY - centerY)) * ratio + (localY - centerY),
-      };
-
-      setZoom(clamped);
-      setPan(clampPan(nextPan, clamped, viewportSize));
-    },
-    [pan, viewportSize, zoom],
-  );
-
-  const handleZoomIn = useCallback(() => {
-    const centerX = viewportSize.width / 2;
-    const centerY = viewportSize.height / 2;
-    zoomAtPoint(zoom + ZOOM_STEP, centerX, centerY);
-  }, [viewportSize.height, viewportSize.width, zoom, zoomAtPoint]);
-
-  const handleZoomOut = useCallback(() => {
-    const centerX = viewportSize.width / 2;
-    const centerY = viewportSize.height / 2;
-    zoomAtPoint(zoom - ZOOM_STEP, centerX, centerY);
-  }, [viewportSize.height, viewportSize.width, zoom, zoomAtPoint]);
-
-  const handleWheelZoom = useCallback(
-    (delta: number, localX: number, localY: number) => {
-      zoomAtPoint(zoom + delta, localX, localY);
-    },
-    [zoom, zoomAtPoint],
-  );
-
-  const handleDoubleClickZoom = useCallback(
-    (clientX: number, clientY: number) => {
-      if (zoom > MIN_ZOOM) {
-        resetView();
-        return;
-      }
-      zoomAtPoint(2, clientX, clientY);
-    },
-    [resetView, zoom, zoomAtPoint],
-  );
-
-  useEffect(() => {
-    setPan((current) => clampPan(current, zoom, viewportSize));
-  }, [viewportSize, zoom]);
-
-  return {
-    zoom,
-    pan,
-    isDragging,
-    setIsDragging,
-    applyPan,
-    resetView,
-    handleZoomIn,
-    handleZoomOut,
-    handleWheelZoom,
-    handleDoubleClickZoom,
-  };
-}
-
-function useViewportSize(enabled: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<ViewportSize>({ width: 0, height: 0 });
-
-  useLayoutEffect(() => {
-    if (!enabled) {
-      setSize({ width: 0, height: 0 });
-      return;
-    }
-
-    const node = ref.current;
-    if (!node) {
-      return;
-    }
-
-    const update = () => {
-      const rect = node.getBoundingClientRect();
-      setSize({
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-      });
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    window.addEventListener("resize", update);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-    };
-  }, [enabled]);
-
-  return { ref, size };
-}
-
 function FloorPlanFullscreen({
   onClose,
   design_image,
 }: {
   onClose: () => void;
-  design_image: string;
+  design_image?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const { ref: viewportRef, size: viewportSize } = useViewportSize(mounted);
+  const [naturalSize, setNaturalSize] = useState<ViewportSize | undefined>(undefined);
   const {
     zoom,
     pan,
@@ -654,7 +42,7 @@ function FloorPlanFullscreen({
     handleZoomOut,
     handleWheelZoom,
     handleDoubleClickZoom,
-  } = usePlanTransform(viewportSize);
+  } = usePlanTransform(viewportSize, naturalSize);
 
   useEffect(() => {
     setMounted(true);
@@ -754,13 +142,13 @@ function FloorPlanFullscreen({
           zoom={zoom}
           pan={pan}
           viewportSize={
-            viewportSize.width > 0
-              ? viewportSize
-              : { width: IMAGE_WIDTH, height: IMAGE_HEIGHT }
+            viewportSize.width > 0 ? viewportSize : FALLBACK_NATURAL_SIZE
           }
+          naturalSize={naturalSize}
           isDragging={isDragging}
           fullscreen
           onPanChange={applyPan}
+          onNaturalSize={setNaturalSize}
           onDragStart={() => setIsDragging(true)}
           onDragEnd={() => setIsDragging(false)}
           onWheelZoom={handleWheelZoom}
@@ -777,16 +165,9 @@ export function FloorPlanViewer({
   className,
   showExpand = true,
 }: FloorPlanViewerProps) {
-  // FIX: fall back to the default preview image whenever design_image is
-  // missing/empty, instead of silently rendering nothing.
-  const resolvedImage = design_image && design_image.trim() !== ""
-    ? design_image
-    : FLOOR_PLAN_SRC;
-
-  console.log("design_image 3", design_image);
-
-
+  const resolvedImage = design_image?.trim() ? design_image : undefined;
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [naturalSize, setNaturalSize] = useState<ViewportSize | undefined>(undefined);
   const { ref: viewportRef, size: viewportSize } = useViewportSize(true);
   const {
     zoom,
@@ -799,7 +180,7 @@ export function FloorPlanViewer({
     handleZoomOut,
     handleWheelZoom,
     handleDoubleClickZoom,
-  } = usePlanTransform(viewportSize);
+  } = usePlanTransform(viewportSize, naturalSize);
 
   return (
     <>
@@ -820,8 +201,10 @@ export function FloorPlanViewer({
               zoom={zoom}
               pan={pan}
               viewportSize={viewportSize}
+              naturalSize={naturalSize}
               isDragging={isDragging}
               onPanChange={applyPan}
+              onNaturalSize={setNaturalSize}
               onDragStart={() => setIsDragging(true)}
               onDragEnd={() => setIsDragging(false)}
               onWheelZoom={handleWheelZoom}

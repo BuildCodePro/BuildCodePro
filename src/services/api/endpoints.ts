@@ -37,8 +37,16 @@ export const API_ENDPOINTS = {
         GET_SINGLE_PROJECT: (projectId: string) => `/projects/${projectId}`,
         UPDATE_PROJECT: (projectId: string) => `/projects/${projectId}`,
         DELETE_PROJECT: (projectId: string) => `/projects/${projectId}`,
+        RESOLVE_JURISDICTION: '/projects/jurisdiction-resolution',
 
         SEND_FOR_REVIEW: (projectId: string) => `/projects/${projectId}/send-for-review`,
+        CREATE_DRAFT: '/projects/drafts',
+        CONFIRM_INFO: (projectId: string) => `/projects/${projectId}/confirm-info`,
+        INTAKE: {
+            GET: (projectId: string) => `/projects/${projectId}/intake`,
+            RETRY: (projectId: string) => `/projects/${projectId}/intake/retry`,
+            LIVE: (projectId: string) => `/projects/${projectId}/intake/ws`,
+        },
 
 
         DRAWINGS: {
@@ -53,6 +61,12 @@ export const API_ENDPOINTS = {
                 `/projects/${projectId}/drawings/${drawingId}`,
             DELETE_DRAWING: (projectId: string, drawingId: string) =>
                 `/projects/${projectId}/drawings/${drawingId}`,
+            GEOMETRY: (projectId: string, drawingId: string) =>
+                `/projects/${projectId}/drawings/${drawingId}/geometry`,
+            GEOMETRY_INGEST: (projectId: string, drawingId: string) =>
+                `/projects/${projectId}/drawings/${drawingId}/geometry/ingest`,
+            PAGE_DESIGN_MODEL: (projectId: string, pageId: string) =>
+                `/projects/${projectId}/pages/${pageId}/design-model`,
         },
         ANALYSIS: {
             JOBS_LIST: (projectId: string) => `/projects/${projectId}/analysis/jobs`,
@@ -69,6 +83,11 @@ export const API_ENDPOINTS = {
         BOM: {
             GET: (projectId: string) => `/projects/${projectId}/bom`,
             UPDATE_LINE_PRICE: (projectId: string, lineId: string) => `/projects/${projectId}/bom/lines/${lineId}`,
+            LINES: (projectId: string) => `/projects/${projectId}/bom/lines`,
+            LINE: (projectId: string, lineId: string) => `/projects/${projectId}/bom/lines/${lineId}`,
+            RESTORE_LINE: (projectId: string, lineId: string) => `/projects/${projectId}/bom/lines/${lineId}/restore`,
+            LINE_HISTORY: (projectId: string, lineId: string) => `/projects/${projectId}/bom/lines/${lineId}/history`,
+            LIVE: (projectId: string) => `/projects/${projectId}/bom/ws`,
         },
 
         EXPORTS: {
