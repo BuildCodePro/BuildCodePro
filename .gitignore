@@ -70,7 +70,6 @@ pnpm-lock.yaml
 # ==========================
 # IDE / Editor
 # ==========================
-.vscode/
 !.vscode/extensions.json
 .idea/
 *.swp
